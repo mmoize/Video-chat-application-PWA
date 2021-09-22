@@ -31,36 +31,6 @@ export class CallService {
    }
 
 
-  // public initPeer() {
-     
-  //   if (!this.peer || this.peer.disconnected) {
-  //     const peerJsOptions: Peer.PeerJSOption = {
-  //       debug: 3,
-  //       config: {
-  //         iceServers: [
-  //           {
-  //             urls: [
-  //               'stun:stun1.l.google.com:19302',
-  //               'stun:stun2.l.google.com:19302',
-  //             ],
-  //           }
-  //         ]
-  //       }
-  //     };
-      
-  //     try {
-  //       let id = uuidv4();
-  //       this.peer = new Peer(id, peerJsOptions);
-  //       return id;
-  //     } catch(error) {
-  //       console.error(error);
-  //     }
-
-
-  //   }
-  // }
-
-
   public initPeer() {
     if (!this.peer || this.peer.disconnected) {
         const peerJsOptions: Peer.PeerJSOption = {
