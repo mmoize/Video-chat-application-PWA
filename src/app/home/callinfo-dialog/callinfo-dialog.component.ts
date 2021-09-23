@@ -23,7 +23,7 @@ export class CallinfoDialogComponent implements OnInit {
 
   public showCopiedSnackBar(){
     this._snackBar.open('Peer ID Copied!', 'Hurrah', {
-      duration: 1000,
+      duration: 2000,
       horizontalPosition: 'center',
       verticalPosition: 'top'
     });
@@ -32,6 +32,6 @@ export class CallinfoDialogComponent implements OnInit {
 }
 
 export interface DialogData {
-  peerId: string;
+  peerId?: String| any;
   joinCall: boolean
 }

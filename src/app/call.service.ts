@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 })
 export class CallService {
 
-  private peer: Peer = new Peer;
+  private peer!: Peer;
   private medialCall!: Peer.MediaConnection;
 
   private localStreamBs: BehaviorSubject<MediaStream | null> = new BehaviorSubject<MediaStream | null>(null);
@@ -31,31 +31,30 @@ export class CallService {
    }
 
 
-  public initPeer() {
-    if (!this.peer || this.peer.disconnected) {
-        const peerJsOptions: Peer.PeerJSOption = {
-            debug: 3,
-            config: {
-                iceServers: [
-                    {
-                        urls: [
-                            'stun:stun1.l.google.com:19302',
-                            'stun:stun2.l.google.com:19302',
-                        ],
-                    }]
-            }
-        };
-        try {
-            let id = uuidv4();
-            this.peer = new Peer(id, peerJsOptions);
-            return id;
-        } catch (error) {
-            console.error(error);
-        }
-        return;
-    } else {
-      return;
-    }
+public initPeer(): string | any  {
+  if (!this.peer || this.peer.disconnected) {
+      const peerJsOptions: Peer.PeerJSOption = {
+          debug: 3,
+          config: {
+              iceServers: [
+                  {
+                      urls: [
+                          'stun:stun1.l.google.com:19302',
+                          'stun:stun2.l.google.com:19302',
+                      ],
+                  }]
+          }
+      };
+      try {
+          let id = uuidv4();
+          this.peer = new Peer(id, peerJsOptions);
+          return id;
+      } catch (error) {
+          console.error(error);
+      }
+  } else {
+    return '';
+  }
 }
 
 
@@ -91,9 +90,9 @@ export class CallService {
         this.isCallStartedBs.next(false);
       });
       this.medialCall.on('close', () => this.onCallClose());
-    } catch (ex) {
-      console.error(ex);
-      this.snackBar.open('ex', 'Close');
+    } catch (ex: any) {
+      console.error("this is the problem",ex);
+      this.snackBar.open(ex, 'Close');
       this.isCallStartedBs.next(false);
     }
   } 
@@ -121,9 +120,9 @@ export class CallService {
         this.medialCall.on('close', () => this.onCallClose());
  
       });
-    } catch(ex) {
-      console.error(ex);
-      this.snackBar.open('ex', 'Close');
+    } catch(ex: any) {
+      console.error('this is the problem',ex);
+      this.snackBar.open(ex, 'Close');
       this.isCallStartedBs.next(false);
     }
   }

@@ -13,7 +13,10 @@ import { CallinfoDialogComponent, DialogData } from './callinfo-dialog/callinfo-
 export class HomeComponent implements OnInit, OnDestroy {
 
   public isCallStarted$: Observable<boolean>;
-  private peerId;
+  private peerId: String;
+
+
+  
 
 
   @ViewChild('localVideo')localVideo!: ElementRef<HTMLVideoElement>;
@@ -22,7 +25,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor(
     public dialog: MatDialog, 
-    private callService: CallService
+    private callService: CallService 
   ) { 
 
     this.isCallStarted$ = this.callService.isCallStarted$;
@@ -42,12 +45,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.callService.destroyPeer();
+    this.callService.destroyPeer(); 
   }
 
   public showModal(joinCall: boolean): void {
-    
-    let dialogData = joinCall ? ({ peerId: null, joinCall: true }) : ({ peerId: this.peerId, joinCall: false });
+    let dialogData: DialogData = joinCall ? ({ peerId: null, joinCall: true }) : ({ peerId: this.peerId, joinCall: false });
     const dialogRef = this.dialog.open(CallinfoDialogComponent, {
       width: '250px',
       data: dialogData
