@@ -12,6 +12,28 @@ import { FormsModule } from '@angular/forms';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { HomeComponent } from './home/home.component';
+import { list } from '@angular/fire/database';
+
+import { provideFirebaseApp, initializeApp } 
+from '@angular/fire/app';
+import { getAuth, provideAuth } 
+from '@angular/fire/auth';
+import { getFirestore, provideFirestore } 
+from '@angular/fire/firestore';
+import { getStorage, provideStorage } 
+from '@angular/fire/storage';
+import { getAnalytics, provideAnalytics } 
+from '@angular/fire/analytics';
+import { environment } from 'src/environments/environment';
+
+
+
+provideFirebaseApp(() => initializeApp(environment.firebase)),
+provideFirestore(() => getFirestore()),
+provideAuth(() => getAuth()),
+provideStorage(() => getStorage()),
+provideAnalytics(() => getAnalytics())
+
 
 @NgModule({
   declarations: [
@@ -28,7 +50,11 @@ import { HomeComponent } from './home/home.component';
     MatFormFieldModule,
     MatInputModule,
     ClipboardModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    
+    
+  
+    
   ],
   providers: [],
   bootstrap: [AppComponent]

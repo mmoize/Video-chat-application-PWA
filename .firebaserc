@@ -1,0 +1,11 @@
+{
+  "targets": {
+    "video-chat-app-pwa": {
+      "hosting": {
+        "video-chat-app": [
+          "video-chat-app-pwa"
+        ]
+      }
+    }
+  }
+}
