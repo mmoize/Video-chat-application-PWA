@@ -44,6 +44,7 @@ import {
 import { switchMap, take } from 'rxjs/operators';
 import { Collection } from 'typescript';
 import { UserData } from '../shared/user';
+import { setDoc } from '@firebase/firestore';
 
 
 
@@ -80,17 +81,93 @@ export class AuthService {
   this.user$.subscribe(user => {
     if (user) {
       this.userData = user;
-      localStorage.setItem('user', JSON.stringify(this.userData));
+      localStorage.setItem('user', JSON.stringify(this.userData.providerData[0]));
       JSON.parse(localStorage.getItem('user') || '{}');
+      console.log("saving data",JSON.parse(localStorage.getItem('user') || '{}') )
     };
   })
 
   }
 
 
-  async getUser(): Promise<User | null> {
+  //Selects a random user picture upon signup
+  profilePictures = [
+    {
+      id: 1,
+      url: "https://wallpaperaccess.com/full/2213426.jpg"
+    },
+    {
+      id: 2,
+      url: "https://wallpaperaccess.com/full/2213475.jpg"
+    },
+    {
+      id: 3,
+      url: "https://images.hdqwalls.com/download/crazy-neon-eye-teeth-nr-1920x1080.jpg"
+    },
+    {
+      id: 4,
+      url: "https://i.pinimg.com/originals/de/24/d4/de24d41e3d11fd2a3818a5a4122d6bd6.png"
+    },
+    {
+      id: 5,
+      url: "https://i.pinimg.com/originals/b0/6c/7d/b06c7d765a3b0ccdd0cb1a7ef452c6b7.jpg"
+    },
+    {
+      id: 6,
+      url: "https://i.pinimg.com/originals/6e/8a/33/6e8a337d5773104a5ea6d4a52fe6ebd0.png"
+    },
+    {
+      id: 7,
+      url: "https://i.imgur.com/ydHflYJ.jpg"
+    },
+    {
+      id: 8,
+      url: "https://i.imgur.com/U3JgmVX.jpg"
+    },
+    {
+      id: 9,
+      url: "https://i.pinimg.com/originals/b7/70/b6/b770b678443164f98d7cd8b801e07937.jpg"
+    },
+    {
+      id: 10,
+      url: "https://i.pinimg.com/736x/e5/94/ee/e594ee658bfa884c838cfe989d111500--wallpapers-android-iphone--wallpaper.jpg"
+    },
+    {
+      id: 11,
+      url: "https://i.pinimg.com/736x/24/06/fc/2406fcb40863a68eb81fe584cc93704f--man-illustration-digital-illustration.jpg"
+    },
+    {
+      id: 12,
+      url: "https://wallpapercave.com/wp/wp1977660.jpg"
+    },
+    {
+      id: 13,
+      url: "https://mendolaart.com/wp-content/uploads/2016/02/THUMB__cosi.jpg"
+    },
+    {
+      id: 14,
+      url: "https://i.imgur.com/ePasIsf.jpg"
+    },
+    {
+      id: 15,
+      url: "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/7238c754934617.596f8ff8e6d74.jpg"
+    }
 
-    
+  ]
+
+  Rand(min: number, max: number): number {
+    return (Math.random() * (max - min + 1) | 0) + min;
+  } 
+
+
+  randProfilePic(): string | undefined {
+    const randNumber = this.Rand(1,15);
+    const pic = this.profilePictures.find(x => x.id === randNumber);
+    return pic?.url;
+  }
+
+
+  async getUser(): Promise<User | null> {
 
     await this.user$.pipe(take(1)).toPromise().catch (resData => {
       this.userResData = resData
@@ -105,11 +182,10 @@ export class AuthService {
 async emailLogin(email: string, password: string):Promise<any> {
   return await signInWithEmailAndPassword(this.auth, email, password).then(resData => {
     this.ngZone.run(() => {
-      this.router.navigate(['/']);
-      this.router.navigate(['/chat']);
+      this.router.navigate(['chat']);
     });
-    console.log("logged in user", resData.user);
-    //this.setUserData(resData.user);
+    console.log("logged in user", resData);
+    this.setUserData(resData.user);
   }).catch((error) => {
     console.log("Issue with email login", error);
     window.alert(error.message);
@@ -117,7 +193,7 @@ async emailLogin(email: string, password: string):Promise<any> {
 }
 
 
-async emailSignUp(email: string, password: string): Promise<void> {
+async emailSignUp(email: string, password: string, username: string): Promise<void> {
 
   const credential = await createUserWithEmailAndPassword(
     this.auth,
@@ -125,8 +201,10 @@ async emailSignUp(email: string, password: string): Promise<void> {
     password
   );
   await updateProfile(
-    credential.user, { displayName: credential.user.displayName }
+    credential.user, { displayName: username, photoURL: this.randProfilePic()}
   ).then(resData => {
+    console.log("update user display name 1", credential.user );
+    console.log("update user display name 2", resData );
     this.setUserData(credential.user)
   });
   await sendEmailVerification(credential.user).then(() => {
@@ -140,20 +218,25 @@ async resetPassword(email: string): Promise<any> {
 
 }
 
-setUserData(user:any) {
-  const userRef: DocumentData = doc( this.afs,`user/${user.uid}`);
-
+  async setUserData(user:any) {
+  console.log("user uiid", user.uid)
+  console.log("user uiid", user.providerData[0])
+  const userProfile = user;
+  const userRef = doc( this.afs,`user/${user.uid}`);
+  console.log("user uiid",userProfile)
+  
   const userData: UserData = {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName,
-    photoURL: user.photoURL,
-    emailVerified: user.emailVerified
+    uid: userProfile.uid,
+    email:userProfile.email,
+    displayName:userProfile.displayName,
+    photoURL: userProfile.photoURL,
+    emailVerified: user.emailVerified,
+    status:'online'
   }
 
-  userRef.set(userData, {
+  return await setDoc(userRef, {userData}, {
     merge: true
-  })
+  } )
 
 }
 

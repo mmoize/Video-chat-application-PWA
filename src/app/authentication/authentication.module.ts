@@ -16,12 +16,14 @@ from '@angular/fire/analytics';
 import { AuthService } from './auth.service';
 import { environment } from 'src/environments/environment';
 import { SignupComponent } from './signup/signup.component';
+import { LoginComponent } from './login/login.component';
 
 
 
 @NgModule({
   declarations: [
-    SignupComponent
+    SignupComponent,
+    LoginComponent
   ],
   imports: [
     CommonModule,

@@ -1,25 +1,156 @@
-<div class="example-container mat-elevation-z8">
-    <h3>{{nickname}} <button mat-flat-button ><mat-icon>logout</mat-icon></button></h3>
-    <h2>Room List</h2>
-    <div class="example-loading-shade"
-         *ngIf="isLoadingResults">
-      <mat-spinner *ngIf="isLoadingResults"></mat-spinner>
-    </div>
-    <div class="button-row">
-      <button mat-flat-button color="primary" [routerLink]="['/addroom']"><mat-icon>add</mat-icon></button>
-    </div>
-    <div class="mat-elevation-z8">
-      <table mat-table [dataSource]="rooms" class="example-table"
-             matSort matSortActive="roomname" matSortDisableClear matSortDirection="asc">
-  
-        <!-- Room Name Column -->
-        <ng-container matColumnDef="roomname">
-          <th mat-header-cell *matHeaderCellDef>Room Name</th>
-          <td mat-cell *matCellDef="let row">{{row.roomname}}</td>
-        </ng-container>
-  
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="enterChatRoom(row.roomname)"></tr>
-      </table>
+
+
+
+
+  <div class=" content">
+    <div  class=" row">
+      <div class=" col-md-12">
+
+        <div id="frame" >
+          <div id="sidepanel" >
+            <div id="profile">
+              <div class="wrap">
+                <img  id="profile-img"[src]="profileData.photoURL" class="online" alt="" />
+                <p>{{profileData.displayName |titlecase}}</p>
+                <i class="fa fa-chevron-down expand-button" aria-hidden="true"></i>
+                <div id="status-options">
+                  <ul>
+                    <li id="status-online" class="active"><span class="status-circle"></span> <p>Online</p></li>
+                    <li id="status-away"><span class="status-circle"></span> <p>Away</p></li>
+                    <li id="status-busy"><span class="status-circle"></span> <p>Busy</p></li>
+                    <li id="status-offline"><span class="status-circle"></span> <p>Offline</p></li>
+                  </ul>
+                </div>
+                <div id="expanded">
+                  <label for="twitter"><i class="fa fa-facebook fa-fw" aria-hidden="true"></i></label>
+                  <input name="twitter" type="text" value="mikeross" />
+                  <label for="twitter"><i class="fa fa-twitter fa-fw" aria-hidden="true"></i></label>
+                  <input name="twitter" type="text" value="ross81" />
+                  <label for="twitter"><i class="fa fa-instagram fa-fw" aria-hidden="true"></i></label>
+                  <input name="twitter" type="text" value="mike.ross" />
+                </div>
+              </div>
+            </div>
+            <div id="search">
+              <label for=""><i class="fa fa-search" aria-hidden="true"></i></label>
+              <input type="text" placeholder="Search contacts..." />
+            </div>
+            <div  id="contacts">
+              <ul *ngFor="let chat of currentUserChats; let i = index" >
+                <li 
+                (click)="onAddOpenedUserChat(chat, $event)" 
+                class="contact"
+                id="{{'contact'+i}}">
+                  <div  class="wrap ">
+                    <span 
+                    *ngIf="chat.messageFor.unReadMessage != 0" 
+                    class="contact-status online">{{chat.messageFor.unReadMessage}}</span>
+                    <span *ngIf="chat.messageFor.unReadMessage == 0"  class="contact-status online"></span>
+                    <img style="object-fit: cover;" [src]="chat.messageWith.photoURL" alt="" />
+                    <div class="meta">
+                      <p class="name">{{chat.messageWith.displayName |titlecase}}</p>
+                      <p *ngIf="chat.messageFor.readMessage == 'true'" class="preview">seen: {{chat.messageWith.message}}</p>
+                      <p *ngIf="chat.messageFor.readMessage == 'false'" class="preview">unread: {{chat.messageWith.message}}</p>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div id="bottom-bar">
+              <button *ngIf="!addContacts" (click)="openAddContacts()" id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Add contact</span></button>
+              <button *ngIf="addContacts" (click)="openChats()"  id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Chats</span></button>
+              <button id="settings"><i class="fa fa-cog fa-fw" aria-hidden="true"></i> <span>Settings</span></button>
+            </div>
+          </div>
+          <div style="overflow: hidden;" *ngIf="!addContacts" class="content-card" (click)="onUpdateContacts()">
+            <div class="contact-profile">
+              <img [src]="openedChatUserData.messageWith.photoURL" alt="" />
+              <p>{{ openedChatUserData.messageWith.displayName }}</p>
+              
+              <div class="social-media">
+                <mat-icon style="transform: scale(1);"> call</mat-icon>
+                <mat-icon (click)="showNotification('top', 'center')" >video_call</mat-icon>
+                
+              </div>
+            </div>
+
+
+            <div #chatcontent [scrollTop]="scrolltop"  class="messages">
+              <ul *ngFor="let message of openedchats" >
+                <li *ngIf="message.chat.uid === profileData.uid" class="sent">
+                  <img [src]="profileData.photoURL" alt="" />
+                  <p>{{message.chat.message}}</p>
+                </li>
+                <li *ngIf="message.chat.uid != profileData.uid" class="replies">
+                  <img [src]="openedChatUserData.messageWith.photoURL" alt="" />
+                  <p>{{message.chat.message}}</p>
+                </li>
+              </ul>
+            </div>
+            <div class="message-input">
+              <form class="message-form"  [formGroup]="chatForm" (ngSubmit)="onSendMessage(chatForm.value)">
+                <div class="wrap">
+                  <input 
+                  type="text" 
+                  placeholder="Write your message..."  
+                  formControlName="message"/>
+                  <mat-icon class ="attachment"  aria-hidden="true"> attach_file</mat-icon>
+                  <button [disabled]="!chatForm.valid" class="submit" type="submit" aria-hidden="true"><mat-icon  class ="sendbtn">send</mat-icon></button>
+                  </div>
+              </form>
+            </div>
+          </div>
+
+         
+
+        
+          <div *ngIf="addContacts" style="overflow: hidden;" class="search-content-card">
+
+            <div  class="searchcontent">
+              <div class="searchBox">
+                <input 
+                (keyup)="onSearchUsers()" 
+                [(ngModel)]="searchValue"
+                class="searchInput"
+                type="text" name=""  
+                placeholder="Search or add a person">
+                <button class="searchButton" href="#">
+                    <i class="material-icons">
+                        search
+                    </i>
+                </button>
+
+
+
+              </div>
+
+              <div style="margin-top: 35%;"  class="messages">
+                  <div class="search-result" *ngFor="let result of results">
+                    <div 
+                    layout-gt-xs="row"  
+                    style="margin:2%;">
+                      <mat-card  style="padding:10px;border:10px;background:transparent" >
+                        <mat-card-title-group >
+                          <mat-card-title style="margin-top: 15%;font-weight:bold" class="text-xl push-none">{{result.userData.displayName |titlecase}}</mat-card-title>
+                          <mat-card-subtitle class="push-none">{{result.userData.email}}</mat-card-subtitle>
+                          <img style="border-radius: 50%;margin-top:4%" mat-card-sm-image [src]="result.userData.photoURL">
+                        </mat-card-title-group>
+                        <mat-card-footer style="margin-left:0%;"> 
+                          <mat-icon style="margin-right: 4%;">add_circle_outline</mat-icon>
+                          <mat-icon style="margin-left: 4%;" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
+                        </mat-card-footer>
+                      </mat-card>
+                    </div>
+ 
+                  </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
+  <app-video></app-video>
+  

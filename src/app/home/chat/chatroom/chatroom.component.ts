@@ -13,6 +13,7 @@ import {
   onSnapshot,
   query,
   where,
+  orderBy,
   Unsubscribe,
   Query,
   DocumentData,
@@ -20,8 +21,12 @@ import {
   collectionChanges,
   docSnapshots,
   updateDoc,
+  getDocs,
+  setDoc,
+  addDoc,
 
 } from '@angular/fire/firestore';
+import { take } from 'rxjs/operators';
 
 export class MyErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
@@ -31,14 +36,17 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
 }
 
 export const snapshotToArray = (snapshot: any) => {
+  console.log("chatroom chat res snapshot 1", snapshot)
   const returnArr: any[] = [];
 
   snapshot.forEach((childSnapshot: any) => {
-      const item = childSnapshot.val();
-      item.key = childSnapshot.key;
+    console.log("chatroom chat res snapshot 2 ", childSnapshot)
+      const item = childSnapshot;
+      item.key = childSnapshot.id;
       returnArr.push(item);
   });
-
+  
+  console.log("returnARR", returnArr);
   return returnArr;
 };
 
@@ -67,26 +75,37 @@ export class ChatroomComponent implements OnInit {
     public datepipe: DatePipe,
     private afs: Firestore,
   ) {
-
+    console.log("loading data");
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     this.nickname = user.displayName
     this.roomname = this.route.snapshot.params.roomname;
 
-
-    docData(doc(this.afs, 'chats/')).subscribe(resData => {
+    collectionData(
+      query(
+        collection(this.afs, 'chats/' ) as CollectionReference,
+        where('chat.roomname', '==', this.roomname), orderBy('chat.date', 'asc')
+      ), { idField: 'id' }
+    ).subscribe(resData => {
+      console.log("loading data chats", resData);
       this.chats = [];
       this.chats = snapshotToArray(resData);
+      console.log("loading data chats", resData);
       setTimeout(() => this.scrolltop = this.chatcontent.nativeElement.scrollHeight, 500);
+    })
 
+
+
+    collectionData(
+      query(
+        collection(this.afs, 'roomusers/') as CollectionReference,
+        where('newroomuser.roomname', '==', this.roomname)
+      ), { idField: 'id' }
+    ).subscribe(resData => {
+      console.log("chatroom users lisr", resData)
+      const roomusers = snapshotToArray(resData);
+      this.users = roomusers.filter(x => x.newroomuser.status === 'online');
     });
-
-    const ref: DocumentData = doc(this.afs,'roomusers/');
-
-    ref.orderByChild('roomname').equalTo(this.roomname).on('value', (resp2: any) => {
-      const roomusers = snapshotToArray(resp2);
-      this.users = roomusers.filter(x => x.status === 'online');
-    });
-
+  
    }
 
   ngOnInit(): void {
@@ -95,21 +114,25 @@ export class ChatroomComponent implements OnInit {
     });
   }
 
-  onFormSubmit(form: any) {
+  async onFormSubmit(form: any) {
     const chat = form;
     chat.roomname = this.roomname;
     chat.nickname = this.nickname;
     chat.date = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
     chat.type = 'message';
-    const newMessage: DocumentData = doc(this.afs,'chats/');
-    newMessage.set(chat);
+
+    await addDoc(collection(this.afs, 'chats/'), {chat});
+
+    // const newMessage = doc(this.afs,'chats/' + this.roomname);
+    // await setDoc(newMessage, {chat}, {merge: false}); 
+
     this.chatForm = this.formBuilder.group({
       'message' : [null, Validators.required]
     });
   }
 
 
-  exitChat() {
+  async exitChat() {
     const chat = { roomname: '', nickname: '', message: '', date: '', type: '' };
     chat.roomname = this.roomname;
     chat.nickname = this.nickname;
@@ -117,26 +140,33 @@ export class ChatroomComponent implements OnInit {
     chat.date = newDate
     chat.message = `${this.nickname} leave the room`;
     chat.type = 'exit';
-    const newMessage: DocumentData = doc(this.afs,'chats/');
-    newMessage.set(chat);
+
+    await addDoc(collection(this.afs, 'chats/'), {chat});
+
+    // const newMessage = doc(this.afs,'chats/' + this.roomname);
+    // await setDoc(newMessage, {chat});
 
 
-    const ref: DocumentData = doc(this.afs,'roomusers/');
-
-    ref.orderByChild('roomname').equalTo(this.roomname).on('value', async (resp: any) => {
+    collectionData(
+      query(
+        collection(this.afs, 'roomusers/') as CollectionReference<any>,
+        where('newroomuser.roomname', '==', this.roomname)
+      ), { idField: 'id' }
+    ).pipe(take(1)).subscribe((async resData => {
+      console.log("loading data 2");
       let roomuser = [];
-      roomuser = snapshotToArray(resp);
-      const user = roomuser.find(x => x.nickname === this.nickname);
+      roomuser =  snapshotToArray(resData);
+      const user = roomuser.find(x => x.newroomuser.nickname === this.nickname);
       if (user !== undefined) {
-        
+    
         const userRef = doc(this.afs,'roomusers/' + user.key)
-        await updateDoc(userRef, {
-          status: 'offline'
-        });
+        await setDoc(userRef, {
+          newroomuser: { status: 'offline'}},{merge: true}
+        );
       }
-    });
+     }));
 
-    this.router.navigate(['/roomlist']);
+    this.router.navigate(['/chat']);
   }
 
 }

@@ -13,101 +13,38 @@ import * as $ from "jquery"
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit, OnDestroy {
-
-  public isCallStarted$: Observable<boolean>;
-  private peerId: String;
+export class HomeComponent implements OnInit{
 
 
-  
 
+  public sidebarColor: string = "red";
 
-  @ViewChild('localVideo')localVideo!: ElementRef<HTMLVideoElement>;
-  @ViewChild('remoteVideo') remoteVideo!: ElementRef<HTMLVideoElement>;
+  constructor() {}
+  changeSidebarColor(color:any){
+    var sidebar = document.getElementsByClassName('sidebar')[0];
+    var mainPanel = document.getElementsByClassName('main-panel')[0];
 
+    this.sidebarColor = color;
 
-  constructor(
-    public dialog: MatDialog, 
-    private callService: CallService 
-  ) { 
-
-    this.isCallStarted$ = this.callService.isCallStarted$;
-    this.peerId = this.callService.initPeer();
-
+    if(sidebar != undefined){
+        sidebar.setAttribute('data',color);
+    }
+    if(mainPanel != undefined){
+        mainPanel.setAttribute('data',color);
+    }
   }
-
-  ngOnInit(): void {
-
-    $(".messages").animate({ scrollTop: $(document).height() }, "fast");
-
-    $("#profile-img").click(function() {
-      $("#status-options").toggleClass("active");
-    });
-    
-    $(".expand-button").click(function() {
-      $("#profile").toggleClass("expanded");
-      $("#contacts").toggleClass("expanded");
-    });
-    
-    $("#status-options ul li").click(function() {
-      $("#profile-img").removeClass();
-      $("#status-online").removeClass("active");
-      $("#status-away").removeClass("active");
-      $("#status-busy").removeClass("active");
-      $("#status-offline").removeClass("active");
-      $(this).addClass("active");
-      
-      if($("#status-online").hasClass("active")) {
-        $("#profile-img").addClass("online");
-      } else if ($("#status-away").hasClass("active")) {
-        $("#profile-img").addClass("away");
-      } else if ($("#status-busy").hasClass("active")) {
-        $("#profile-img").addClass("busy");
-      } else if ($("#status-offline").hasClass("active")) {
-        $("#profile-img").addClass("offline");
-      } else {
-        $("#profile-img").removeClass();
-      };
-      
-      $("#status-options").removeClass("active");
-    });
-    
-
-  
-
-    this.callService.localStream$
-    .pipe(filter(res => !!res))
-    .subscribe(stream => this.localVideo.nativeElement.srcObject = stream)
-  this.callService.remoteStream$
-    .pipe(filter(res => !!res))
-    .subscribe(stream => this.remoteVideo.nativeElement.srcObject = stream)
-
+  changeDashboardColor(color:any){
+    var body = document.getElementsByTagName('body')[0];
+    if (body && color === 'white-content') {
+        body.classList.add(color);
+    }
+    else if(body.classList.contains('white-content')) {
+      body.classList.remove('white-content');
+    }
   }
+  ngOnInit() {}
 
-  ngOnDestroy(): void {
-    this.callService.destroyPeer(); 
-  }
-
-  public showModal(joinCall: boolean): void {
-    let dialogData: DialogData = joinCall ? ({ peerId: null, joinCall: true }) : ({ peerId: this.peerId, joinCall: false });
-    const dialogRef = this.dialog.open(CallinfoDialogComponent, {
-      width: '250px',
-      data: dialogData
-    });
-
-    dialogRef.afterClosed()
-      .pipe(
-        switchMap(peerId => 
-          joinCall ? of(this.callService.establishMediaCall(peerId)) : of(this.callService.enableCallAnswer())
-        ),
-      )
-      .subscribe(_  => { });
-  }
-
-
-  public endCall(){
-    this.callService.closeMediaCall();
-  }
+ 
 
 }
 

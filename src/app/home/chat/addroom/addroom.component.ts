@@ -19,8 +19,12 @@ import {
   collectionData,
   collectionChanges,
   docSnapshots,
+  getDoc,
+  orderBy,
+  setDoc
 
 } from '@angular/fire/firestore';
+import {  } from '@firebase/database';
 
 export class MyErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
@@ -39,7 +43,11 @@ export class AddroomComponent implements OnInit {
   roomForm!: FormGroup;
   nickname = '';
   roomname = '';
-  ref: DocumentData = doc(this.afs,'rooms/');
+  ref: DocumentData = collectionData(
+    query(
+      collection(this.afs, 'rooms/') as CollectionReference,
+    ), { idField: 'id' }
+  );
   matcher = new MyErrorStateMatcher();
 
   constructor(
@@ -48,7 +56,11 @@ export class AddroomComponent implements OnInit {
               private formBuilder: FormBuilder,
               private snackBar: MatSnackBar,
               private afs: Firestore,
-            ) { }
+            ) {
+              
+             }
+
+
 
   ngOnInit(): void {
 
@@ -61,16 +73,26 @@ export class AddroomComponent implements OnInit {
 
 
   onFormSubmit(form: any) {
+
     const room = form;
-    this.ref.orderByChild('roomname').equalTo(room.roomname).once('value', (snapshot: any) => {
-      if (snapshot.exists()) {
+    console.log('selected room', room.roomname);
+    
+   this.ref= collectionData(
+      query(
+        collection(this.afs, 'rooms/') as CollectionReference,
+         where('roomname', 'not-in', [room.roomname])
+      ), { idField: 'id' }
+    ).subscribe(async resData => {
+      console.log("response data", resData.length);
+      if (resData.length != 0) {
         this.snackBar.open('Room name already exist!');
       } else {
-        const newRoom: DocumentData = doc(this.afs,'rooms/');
-        newRoom.set(room);
-        this.router.navigate(['/roomlist']);
+        const newRoom = doc(this.afs,'rooms/', room.roomname);
+        await setDoc(newRoom, {room} );
+        this.router.navigate(['/chat']);
       }
     });
+
   }
 
 

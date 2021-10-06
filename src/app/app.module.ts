@@ -9,11 +9,14 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from "@angular/material/form-field"
 import { MatInputModule } from "@angular/material/input"
 import { MatIconModule } from '@angular/material/icon'
-import { FormsModule } from '@angular/forms';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { HomeComponent } from './home/home.component';
 import { list } from '@angular/fire/database';
+import { DatePipe } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
+import { ToastrModule } from 'ngx-toastr';
 
 import { provideFirebaseApp, initializeApp } 
 from '@angular/fire/app';
@@ -33,6 +36,10 @@ import { AuthService } from './authentication/auth.service';
 import { ChatComponent } from './home/chat/chat.component';
 import { CallService } from './call.service';
 import { RouterModule } from '@angular/router';
+import { FooterComponent } from './components/footer/footer.component';
+import { NavbarComponent } from './components/navbar/navbar.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { ComponentsModule } from './components/components.module';
 
 
 
@@ -44,29 +51,34 @@ import { RouterModule } from '@angular/router';
   declarations: [
     AppComponent,
     HomeComponent,
-    AuthenticationComponent
+    AuthenticationComponent,
+  
+
   ],
   imports: [
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore()),
+    provideAuth(() => getAuth()),
+    provideStorage(() => getStorage()),
+    provideAnalytics(() => getAnalytics()),
     BrowserModule,
     RouterModule,
     AppRoutingModule,
     BrowserAnimationsModule,
     FormsModule,
+    ReactiveFormsModule,
     MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     ClipboardModule,
     MatSnackBarModule,
+    NgbModule,
     MatIconModule,
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => getFirestore()),
-    provideAuth(() => getAuth()),
-    provideStorage(() => getStorage()),
-    provideAnalytics(() => getAnalytics())
-    
+    ComponentsModule,
+    ToastrModule.forRoot()
   ],
-  providers: [AuthService, CallService],
+  providers: [AuthService, CallService, DatePipe],
   bootstrap: [AppComponent]
 })
 export class AppModule {

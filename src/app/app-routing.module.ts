@@ -1,17 +1,25 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-//import { BrowserModule } from '@angular/platform-browser';
+import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthenticationComponent } from './authentication/authentication.component';
-import { SignupComponent } from './authentication/signup/signup.component';
 import { HomeComponent } from './home/home.component';
+
 
 const routes: Routes = [
   {
     path: "",
-    redirectTo: "home",
+    redirectTo: "video",
     pathMatch: "full"
   },
+  // {
+  //   path: "",
+  //   loadChildren: () => import ("./home/home.module").then(m => m.HomeModule)
+  // },
+  // {
+  //   path: "",
+  //   loadChildren: () => import ("./authentication/authentication.module").then(m => m. AuthenticationModule)
+  // },
   {
     path: "",
     component: HomeComponent,
@@ -19,7 +27,7 @@ const routes: Routes = [
       {
         path: "",
         loadChildren: () => import ("./home/home.module").then(m => m.HomeModule)
-      }
+      },
     ]
   },
   {
@@ -27,27 +35,24 @@ const routes: Routes = [
     component: AuthenticationComponent,
     children: [
       {
-        path: "auth",
+        path: "",
         loadChildren: () => import ("./authentication/authentication.module").then(m => m. AuthenticationModule)
       }
     ]
   },
-  { path: "signup", component: SignupComponent },
   {
     path: "**",
-    redirectTo: "home"
+    redirectTo: "video"
   }
 ];
 
 @NgModule({
   imports: [
     CommonModule,
-   // BrowserModule,
-    //RouterModule
+    BrowserModule,
     RouterModule.forRoot(routes, {
-      useHash: false
+      useHash: true
     }),
-    //RouterModule.forChild(routes)
   ],
   exports: [RouterModule]
 })

@@ -1,0 +1,17 @@
+<div class="container">
+    <form class="example-form" [formGroup]="displayNameForm" (ngSubmit)="onFormSubmit(displayNameForm.value)">
+        <h2>Please enter display name</h2>
+        <mat-form-field class="example-full-width">
+          <mat-label>Display Name</mat-label>
+          <input matInput placeholder="Enter display name" formControlName="displayname"
+                  [errorStateMatcher]="matcher">
+          <mat-error>
+            <!-- <span *ngIf="!roomForm.get('roomname').valid && roomForm.get('roomname').touched">Enter room name</span> -->
+            <span >Enter display name</span>
+          </mat-error>
+        </mat-form-field>
+        <div class="button-row">
+            <button type="submit" [disabled]="!displayNameForm.valid" mat-fab color="primary"><mat-icon>save</mat-icon></button>
+        </div>
+    </form>
+  </div>

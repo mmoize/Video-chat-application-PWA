@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import {
@@ -10,36 +10,87 @@ import {
   Firestore,
   onSnapshot,
   query,
-  where,
   Unsubscribe,
   Query,
+  where,
   DocumentData,
   collectionData,
   collectionChanges,
   docSnapshots,
+  getDoc,
+  addDoc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  FieldPath,
+  WhereFilterOp,
+  orderBy
 } from '@angular/fire/firestore';
 import {
-  Storage,
-  ref,
-  deleteObject,
-  uploadBytes,
-  uploadString,
-  uploadBytesResumable,
-  percentage,
-  getDownloadURL,
-} from '@angular/fire/storage';
-import { getDocs, QuerySnapshot, updateDoc } from '@firebase/firestore';
-import { orderByChild } from '@firebase/database';
+  Auth,
+  signOut,
+  signInWithPopup,
+  user,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  getAdditionalUserInfo,
+  OAuthProvider,
+  linkWithPopup,
+  unlink,
+  updateEmail,
+  updatePassword,
+  User,
+  reauthenticateWithPopup,
+  authState,
+  onAuthStateChanged
+} from '@angular/fire/auth';
+import {   QuerySnapshot,  getFirestore, startAt, endAt, limit} from '@firebase/firestore';
+import { getDatabase, ref, onValue, Database} from "firebase/database";
+import { map, take } from 'rxjs/operators';
+import * as $ from "jquery"
+import { Observable } from 'rxjs';
+import { FormBuilder, FormControl, FormGroup, FormGroupDirective, NgForm, Validators } from '@angular/forms';
+import { ErrorStateMatcher } from '@angular/material/core';
+import { toInteger } from '@ng-bootstrap/ng-bootstrap/util/util';
+import { ToastrService } from 'ngx-toastr';
+
+
+export class MyErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
+    const isSubmitted = form && form.submitted;
+    return !!(control && control.invalid && (control.dirty || control.touched || isSubmitted));
+  }
+}
 
 
 export const snapshotToArray = (snapshot: any ) => {
+
   const returnArr: any[] = [];
 
   snapshot.forEach((childSnapshot: any) => {
-      const item = childSnapshot.val();
-      item.key = childSnapshot.key;
+
+      const item = childSnapshot;
+      item.key = childSnapshot.id;
       returnArr.push(item);
   });
+
+  return returnArr;
+};
+
+export const roomUsersSnapshotToArray = (snapshot: any ) => {
+
+  const returnArr: any[] = [];
+
+  snapshot.forEach((childSnapshot: any) => {
+      const item = childSnapshot;
+      item.key = childSnapshot.id;
+      returnArr.push(item);
+  });
+
+  console.log("returnARR", returnArr);
 
   return returnArr;
 };
@@ -51,36 +102,439 @@ export const snapshotToArray = (snapshot: any ) => {
 })
 export class ChatComponent implements OnInit {
 
+  @ViewChild('chatcontent') chatcontent!: ElementRef;
+  scrolltop = null;
+
+
+  user$!: Observable<User | null | unknown>;
+
   nickname: string;
   displayedColumns: string[] = ['roomname'];
   rooms: any = [];
   isLoadingResults = true;
 
+  profileData:any;
+  currentUser:any;
+  currentUserChats:any;
+
+  searchValue: string = "";
+  results!: any[];
+
+  addContacts = true;
+  sidePanelContactClassID:any;
+
+
+  chatForm!: FormGroup;
+  message = '';
+  openedchats:any = [];
+  openedChatUserData:any;
+ 
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
     private afs: Firestore,
+    private auth: Auth,
+    private formBuilder: FormBuilder,
+    private toastr: ToastrService,
     public datepipe: DatePipe) {
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      this.user$ = authState(auth);
+      this.user$.subscribe(async user => {
+        if (user) {
+          this.profileData = user;
+          const userRef = doc( this.afs,`user/${this.profileData.uid}`);
+          const docSnap = await getDoc(userRef);
+          const docData = docSnap.data()
+          this.currentUser= docData?.userData;
 
+          collectionData(
+            query(
+              collection(this.afs, 'userchatsrooms/') as CollectionReference<any>,
+              where('messageFor.uid', '==', this.profileData.uid),
+              orderBy('messageFor.date', 'desc')
+            ), { idField: 'id' }
+          ).subscribe(resData => {
+            console.log('Loading user contacts', resData)
+            this.currentUserChats = resData
+          })
+
+          
+        };
+      })
+
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
       this.nickname = user.displayName
 
-      docData(doc(this.afs, 'rooms/')).subscribe(resData => {
+      collectionData(
+        query(
+          collection(this.afs, 'rooms/') as CollectionReference,
+          
+        ), { idField: 'id' }
+      ).subscribe(resData => {
+        console.log("results", resData);
         this.rooms = [];
         this.rooms = snapshotToArray(resData);
+        console.log("rooms", this.rooms);
         this.isLoadingResults =false;
       });
-     }
+      
+    }
 
   ngOnInit(): void {
+
+    $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+
+    $("#profile-img").click(function() {
+      $("#status-options").toggleClass("active");
+    });
+    
+    $(".expand-button").click(function() {
+      $("#profile").toggleClass("expanded");
+      $("#contacts").toggleClass("expanded");
+    });
+    
+    $("#status-options ul li").click(function() {
+      $("#profile-img").removeClass();
+      $("#status-online").removeClass("active");
+      $("#status-away").removeClass("active");
+      $("#status-busy").removeClass("active");
+      $("#status-offline").removeClass("active");
+      $(this).addClass("active");
+      
+      if($("#status-online").hasClass("active")) {
+        $("#profile-img").addClass("online");
+      } else if ($("#status-away").hasClass("active")) {
+        $("#profile-img").addClass("away");
+      } else if ($("#status-busy").hasClass("active")) {
+        $("#profile-img").addClass("busy");
+      } else if ($("#status-offline").hasClass("active")) {
+        $("#profile-img").addClass("offline");
+      } else {
+        $("#profile-img").removeClass();
+      };
+      
+      $("#status-options").removeClass("active");
+    });
+
+
+
+    this.chatForm = this.formBuilder.group({
+      'message' : [null, Validators.required]
+    });
+
+    
+  }
+
+
+  openAddContacts() {
+
+    this.addContacts =true;
+ 
+  }
+  openChats() {
+    this.addContacts = false;
+  }
+
+
+  async onStartNewMessage(sendToUserData:any) {
+
+    console.log("just added a new message", sendToUserData);
+
+    const newDate: any = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+    const messageFor = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'',readMessage:''}
+    messageFor.displayName = this.profileData.displayName;
+    messageFor.uid = this.profileData.uid;
+    messageFor.date = newDate;
+    messageFor.type = 'newMessageCreated';
+    messageFor.createdMessage = 'true';
+    messageFor.photoURL = this.profileData.photoURL;
+    messageFor.message = '';
+    messageFor.readMessage = ''
+
+    const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:''}
+    messageWith.displayName = sendToUserData.displayName;
+    messageWith.uid = sendToUserData.uid;
+    messageWith.date = newDate;
+    messageWith.type = 'newMessageCreated';
+    messageWith.createdMessage = 'false';
+    messageWith.photoURL = sendToUserData.photoURL;
+    messageWith.message = '';
+    messageWith.readMessage
+
+    const userChatRoomID = this.profileData.uid+sendToUserData.uid;
+
+    //await addDoc(collection(this.afs, 'userchatsrooms/'+userChatRoomID), {messageFor,messageWith});
+    const newUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(newUserChatRoom,  {messageFor,messageWith} );
+
+    this.onStartNewMessageOtherMember(sendToUserData);
+
+  }
+
+  onMakeVideoCall() {
+    const videoCallFrom = {uid:'', displayName:'', callID:''};
+    videoCallFrom.uid = this.profileData.uid;
+    videoCallFrom.displayName = this.profileData.displayName;
+    videoCallFrom.callID = ''
+
+    const videoCallTo = {uid:'', displayName:'', callID: ''}
+  }
+
+  async onStartNewMessageOtherMember(otherMember:any) {
+    const newDate: any = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+    const messageFor = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'',readMessage:'', unReadMessage:0}
+    messageFor.displayName = otherMember.displayName;
+    messageFor.uid = otherMember.uid;
+    messageFor.date = newDate;
+    messageFor.type = 'newMessageCreated';
+    messageFor.createdMessage = 'false';
+    messageFor.photoURL = otherMember.photoURL;
+    messageFor.message = '';
+    messageFor.readMessage='';
+    messageFor.unReadMessage =0;
+
+    const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:'',unReadMessage: 0}
+    messageWith.displayName = this.profileData.displayName;
+    messageWith.uid = this.profileData.uid;
+    messageWith.date = newDate;
+    messageWith.type = 'newMessageCreated';
+    messageWith.createdMessage = 'true';
+    messageWith.photoURL = this.profileData.photoURL;
+    messageWith.message = "";
+    messageWith.readMessage= "";
+    messageWith.unReadMessage= 0;
+
+    const userChatRoomID = otherMember.uid+this.profileData.uid;
+
+    //await addDoc(collection(this.afs, 'userchatsrooms/'+userChatRoomID), {messageFor,messageWith});
+    const newUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(newUserChatRoom,  {messageFor,messageWith} );
+  }
+
+
+  // Adds the users information for thats chat thats opened to the variable openedCHatuserData
+  // which will be used to send a message
+  async onAddOpenedUserChat(userData:any, event:Event) {
+    this.openedChatUserData = userData;
+
+    // Highlights the selected contact on left handside/ contacts panel.
+    const clickedContactElementID = (<HTMLElement>event.currentTarget).id
+    console.log("the clicked contact", clickedContactElementID)
+
+    if (this.sidePanelContactClassID === undefined) {
+      let element = document.getElementById(clickedContactElementID);
+      element?.classList.add('active');
+      this.sidePanelContactClassID = clickedContactElementID;
+    } else {
+      let element = document.getElementById(this.sidePanelContactClassID);
+      element?.classList.remove("active")
+      this.sidePanelContactClassID = clickedContactElementID;
+      let newlySelectelement = document.getElementById(this.sidePanelContactClassID);
+      newlySelectelement?.classList.add('active');
+    }
+
+    
+    
+    //open chats box and close AddContacts box
+    this.addContacts = false;
+
+    // Conversation ID for each the memeber of the conversation
+    // this.profileData = current user UID
+    // this.userData = the other member of the conversation
+
+     const convoID1 =  this.profileData.uid+userData.messageWith.uid
+     const convoID2 =  userData.messageWith.uid+this.profileData.uid
+
+     collectionData(
+      query(
+        collection(this.afs, 'userchats/' ) as CollectionReference,
+        where('chat.conversationID', 'array-contains-any', [convoID1, convoID2]), 
+        orderBy('chat.date', 'asc')
+      ), { idField: 'id' }
+    ).subscribe(resData => {
+      console.log("loading data chats", resData);
+      this.openedchats = [];
+      this.openedchats = resData
+      setTimeout(() => this.scrolltop = this.chatcontent.nativeElement.scrollHeight, 500);
+    });
+
+
+    // Update Each user contact detail status // readMessages // noUnreadMessages.
+
+    // CUrrent User
+    const currentUserChatRoomID = this.profileData.uid+this.openedChatUserData.messageWith.uid;
+    const currentMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+ currentUserChatRoomID);
+    
+    await setDoc(currentMemberUserChatRoom, {
+      messageFor:{
+        data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      },
+      // messageWith:{
+      //   data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //   readMessage:'',
+      // }
+    }, {merge: true} 
+    );
+
+    // Other Member
+    const userChatRoomID = this.openedChatUserData.messageWith.uid+this.profileData.uid;
+    console.log('the current user, userchatroom id 1', this.openedChatUserData )
+
+    const otherMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(otherMemberUserChatRoom, {
+      // messageFor:{
+      //  date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //  readMessage:'false',
+      //  unReadMessage: 0
+      // },
+      messageWith:{
+        date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      }
+    }, {merge: true} 
+    );
+
+
+    // Lastly Update the contacts again
+    //this.onUpdateContacts()
+  }
+
+
+  async onUpdateContacts() {
+    // Update Each user contact detail status // readMessages // noUnreadMessages.
+
+    // CUrrent User
+    const currentUserChatRoomID = this.profileData.uid+this.openedChatUserData.messageWith.uid;
+    const currentMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+ currentUserChatRoomID);
+    
+    await setDoc(currentMemberUserChatRoom, {
+      messageFor:{
+        data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      },
+      // messageWith:{
+      //   data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //   readMessage:'',
+      // }
+    }, {merge: true} 
+    );
+
+    // Other Member
+    const userChatRoomID = this.openedChatUserData.messageWith.uid+this.profileData.uid;
+    console.log('the current user, userchatroom id 1', this.openedChatUserData )
+
+    const otherMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(otherMemberUserChatRoom, {
+      // messageFor:{
+      //  date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //  readMessage:'false',
+      //  unReadMessage: 0
+      // },
+      messageWith:{
+        date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      }
+    }, {merge: true} 
+    );
+  }
+
+  
+
+
+  // Send a message that contains an array of both members which is used later for loading chats message,
+  // for both members of the chat.
+  async onSendMessage(form:any) {
+    const chat = form;
+    chat.chatMembers = [this.profileData.uid, this.openedChatUserData.messageWith.uid]
+    chat.displayName = this.profileData.displayName;
+    chat.uid = this.profileData.uid
+    chat.date = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+    chat.type = 'message';
+    // conversation ID's helps with querying the database for a particular chat conversation.
+    const convoID1 = this.profileData.uid + this.openedChatUserData.messageWith.uid 
+    const convoID2 = this.openedChatUserData.messageWith.uid + this.profileData.uid
+    chat.conversationID = [convoID1, convoID2]
+
+    await addDoc(collection(this.afs, 'userchats/'), {chat});
+
+    this.chatForm = this.formBuilder.group({
+      'message' : [null, Validators.required]
+    });
+
+    // Update user chat rooms/ or contact cards.
+    // This section updates each members contact cards on left left panel,
+    // displays messaging activity.
+
+    // Increase number of unReadMessages
+    let unReadMessages;
+    const ChatRoomID = this.openedChatUserData.messageWith.uid+this.profileData.uid;
+
+    const UserChatRoom = doc(this.afs, 'userchatsrooms/'+ChatRoomID);
+    const docSnap = await getDoc(UserChatRoom).then(resData => {
+      const retrData:any = resData.data();
+      unReadMessages = retrData.messageFor.unReadMessage
+    });
+    
+   if (unReadMessages != 0) {
+      const noMessages: any = unReadMessages 
+      const addUpMessages = noMessages + 1
+      unReadMessages = addUpMessages
+   } else {
+      unReadMessages =  1
+   }
+
+    // The other member of the conversation whom the message is being sent to.
+    const userChatRoomID = this.openedChatUserData.messageWith.uid+this.profileData.uid;
+    console.log("urrrend messages", unReadMessages)
+
+    const otherMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(otherMemberUserChatRoom, {
+      messageFor:{
+       date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+       message:chat.message,
+       readMessage:'false',
+       unReadMessage:unReadMessages
+      },
+      messageWith:{
+        date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        message:chat.message,
+        readMessage:'true'
+      }
+    }, {merge: true} 
+    );
+            
+    
+   //current member whom is send the message
+   const currentUserChatRoomID = this.profileData.uid+this.openedChatUserData.messageWith.uid;
+   const currentMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+ currentUserChatRoomID);
+   
+   await setDoc(currentMemberUserChatRoom, {
+     messageFor:{
+      data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      message:chat.message,
+      readMessage:'true'
+     },
+     messageWith:{
+       data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+       message:chat.message,
+       readMessage:'false',
+       unReadMessage:unReadMessages
+     }
+   }, {merge: true} 
+   );
+
   }
 
 
 
 
 
-  enterChatRoom(roomname: string) {
+  async enterChatRoom(roomname: string) {
     const chat = { roomname: '', nickname: '', message: '', date: '', type: '' };
     chat.roomname = roomname;
     chat.nickname = this.nickname;
@@ -88,34 +542,132 @@ export class ChatComponent implements OnInit {
     chat.date = newDate
     chat.message = `${this.nickname} enter the room`;
     chat.type = 'join';
-    const newMessages: DocumentData = doc(this.afs, 'chats/');
-    newMessages.set(chat)
 
-    
+    await addDoc(collection(this.afs, 'chats/'), {chat});
+  
 
-
-    const docRef = getDocs(collection(this.afs, 'rooomusers'));
-    docRef.then(async resData => {
+    collectionData(
+      query(
+        collection(this.afs, 'roomusers/') as CollectionReference<any>,
+        where('newroomuser.roomname', '==', roomname)
+      ), { idField: 'id' }
+    ).pipe(take(1)).subscribe((async resData => {
       let roomuser = [];
-      roomuser = snapshotToArray(resData);
-      const user = roomuser.find(x => x.nickname);
-      if ( user !== undefined) {
-        const userRef = doc(this.afs,'roomusers/' + user.key)
-        await updateDoc(userRef, {
-          status: 'online'
-        });
+      roomuser = roomUsersSnapshotToArray(resData);
+      const user = roomuser.find(x => x.newroomuser.nickname === this.nickname);
+
+      if ( user != undefined) {
+        const userRef = doc(this.afs,'roomusers/' + user.key);
+
+        await setDoc(userRef, {
+          newroomuser: { status: 'online'}},{merge: true}
+        );
+
       } else {
         const newroomuser = { roomname: '', nickname: '', status: '' };
         newroomuser.roomname = roomname;
         newroomuser.nickname = this.nickname;
         newroomuser.status = 'online';
-        const newRoomUser: DocumentData =  doc(collection(this.afs, 'roomusers/'));
-        newRoomUser.set(newroomuser)
+ 
+        const newRoomUser = await addDoc(collection(this.afs, 'roomusers/'), {
+          newroomuser
+         });
+        
       }
-    });
+     }));
     this.router.navigate(['/chatroom', roomname]);
-
   }
+
+
+  ///// User search/ Add existing user from the database
+
+  onSearchUsers() {
+    console.log('search length', this.searchValue.length)
+    this.results = []
+    if (this.searchValue.length >= 1) {
+      collectionData( query(
+          collection(this.afs, 'user/'),
+          where('userData.displayName', '>=', this.searchValue), 
+          where('userData.displayName', '<=', this.searchValue+"\uf8ff"),
+          limit(10)
+        ), { idField: 'id' }
+      ).subscribe(resData => {
+        console.log("Searched users data", resData);
+        this.results = []
+        this.results = resData
+        console.log("searched element", this.results[0].userData)
+      });
+    }
+  }
+
+
+
+  showNotification(from:any, align:any){
+
+    const color = Math.floor((Math.random() * 5) + 1);
+
+    switch(color){
+      case 1:
+      this.toastr.info('<span class="tim-icons icon-bell-55" [data-notify]="icon"></span> Welcome to <b>Black Dashboard Angular</b> - a beautiful freebie for every web developer.', '', {
+         disableTimeOut: true,
+         closeButton: true,
+         enableHtml: true,
+         toastClass: "alert alert-info alert-with-icon",
+         positionClass: 'toast-' + from + '-' +  align
+       });
+      break;
+      case 2:
+      this.toastr.success('<span class="tim-icons icon-bell-55" [data-notify]="icon"></span> Welcome to <b>Black Dashboard Angular</b> - a beautiful freebie for every web developer.', '', {
+         disableTimeOut: true,
+         closeButton: true,
+         enableHtml: true,
+         toastClass: "alert alert-success alert-with-icon",
+         positionClass: 'toast-' + from + '-' +  align
+       });
+      break;
+      case 3:
+      this.toastr.warning('<span class="tim-icons icon-bell-55" [data-notify]="icon"></span> Welcome to <b>Black Dashboard Angular</b> - a beautiful freebie for every web developer.', '', {
+         disableTimeOut: true,
+         closeButton: true,
+         enableHtml: true,
+         toastClass: "alert alert-warning alert-with-icon",
+         positionClass: 'toast-' + from + '-' +  align
+       });
+      break;
+      case 4:
+      this.toastr.error('<span class="tim-icons icon-bell-55" [data-notify]="icon"></span> Welcome to <b>Black Dashboard Angular</b> - a beautiful freebie for every web developer.', '', {
+         disableTimeOut: true,
+         enableHtml: true,
+         closeButton: true,
+         toastClass: "alert alert-danger alert-with-icon",
+         positionClass: 'toast-' + from + '-' +  align
+       });
+       break;
+       case 5:
+       this.toastr.show('<span class="tim-icons icon-bell-55" [data-notify]="icon"></span> Welcome to <b>Black Dashboard Angular</b> - a beautiful freebie for every web developer.', '', {
+          disableTimeOut: true,
+          closeButton: true,
+          enableHtml: true,
+          toastClass: "alert alert-primary alert-with-icon",
+          positionClass: 'toast-' + from + '-' +  align
+        });
+      break;
+      default:
+      break;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
     
   
 }
