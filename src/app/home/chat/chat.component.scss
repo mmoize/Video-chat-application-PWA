@@ -683,7 +683,7 @@ $break-big: 900px;
 
 			@media screen and (max-width: $break) {
 				max-height: calc(100% - 105px);
-        //max-height: calc(100% - 30px);
+
 			}
 			
 			&::-webkit-scrollbar {

@@ -1,0 +1,41 @@
+.mat-dialog-content {
+    padding: 0px;
+    height: fit-content;
+    background: blueviolet;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+
+
+  }
+  
+  .table {
+    width: 100%;
+  }
+
+
+  .mat-dialog-actions {
+      padding: 0px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    height: fit-content;
+    overflow: hidden;
+
+    @media screen and (max-width: 735px) {
+        margin: 0px;
+  
+  
+    }
+}
+
+mat-button{
+    background: rgb(129, 32, 51);
+}
+
+.myh1{
+    position: relative;
+    justify-content: center;
+    align-items: center;
+}

@@ -24,7 +24,8 @@ import {
   getDocs,
   FieldPath,
   WhereFilterOp,
-  orderBy
+  orderBy,
+  deleteDoc
 } from '@angular/fire/firestore';
 import {
   Auth,
@@ -56,6 +57,12 @@ import { FormBuilder, FormControl, FormGroup, FormGroupDirective, NgForm, Valida
 import { ErrorStateMatcher } from '@angular/material/core';
 import { toInteger } from '@ng-bootstrap/ng-bootstrap/util/util';
 import { ToastrService } from 'ngx-toastr';
+import { MatDialog } from '@angular/material/dialog';
+import { MakeVideoCallModalComponent } from 'src/app/modals/make-video-call-modal/make-video-call-modal.component';
+import { ReceiveVideoCallModalComponent } from 'src/app/modals/receive-video-call-modal/receive-video-call-modal.component';
+import { CallService } from 'src/app/call.service';
+
+
 
 
 export class MyErrorStateMatcher implements ErrorStateMatcher {
@@ -105,6 +112,8 @@ export class ChatComponent implements OnInit {
   @ViewChild('chatcontent') chatcontent!: ElementRef;
   scrolltop = null;
 
+  videoCallInProgress = false;
+  private peerId!: string;
 
   user$!: Observable<User | null | unknown>;
 
@@ -134,10 +143,15 @@ export class ChatComponent implements OnInit {
     private router: Router, 
     private afs: Firestore,
     private auth: Auth,
+    private callService: CallService,
     private formBuilder: FormBuilder,
     private toastr: ToastrService,
-    public datepipe: DatePipe) {
-
+    public datepipe: DatePipe,
+    public dialog: MatDialog
+    ) {
+      //this.peerId = this.callService.initPeer();
+      // Load current user details such as profile details and current conversations
+      // which will be displayed on the left handside panel of the chat module
       this.user$ = authState(auth);
       this.user$.subscribe(async user => {
         if (user) {
@@ -164,7 +178,6 @@ export class ChatComponent implements OnInit {
 
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       this.nickname = user.displayName
-
       collectionData(
         query(
           collection(this.afs, 'rooms/') as CollectionReference,
@@ -182,46 +195,94 @@ export class ChatComponent implements OnInit {
 
   ngOnInit(): void {
 
+    // Contriling the toggle button for the current user status on the side panel of the..
+    // of the chat module
+
     $(".messages").animate({ scrollTop: $(document).height() }, "fast");
 
-    $("#profile-img").click(function() {
-      $("#status-options").toggleClass("active");
-    });
-    
-    $(".expand-button").click(function() {
-      $("#profile").toggleClass("expanded");
-      $("#contacts").toggleClass("expanded");
-    });
-    
-    $("#status-options ul li").click(function() {
-      $("#profile-img").removeClass();
-      $("#status-online").removeClass("active");
-      $("#status-away").removeClass("active");
-      $("#status-busy").removeClass("active");
-      $("#status-offline").removeClass("active");
-      $(this).addClass("active");
+      $("#profile-img").click(function() {
+        $("#status-options").toggleClass("active");
+      });
       
-      if($("#status-online").hasClass("active")) {
-        $("#profile-img").addClass("online");
-      } else if ($("#status-away").hasClass("active")) {
-        $("#profile-img").addClass("away");
-      } else if ($("#status-busy").hasClass("active")) {
-        $("#profile-img").addClass("busy");
-      } else if ($("#status-offline").hasClass("active")) {
-        $("#profile-img").addClass("offline");
-      } else {
+      $(".expand-button").click(function() {
+        $("#profile").toggleClass("expanded");
+        $("#contacts").toggleClass("expanded");
+      });
+      
+      $("#status-options ul li").click(function() {
         $("#profile-img").removeClass();
-      };
-      
-      $("#status-options").removeClass("active");
-    });
+        $("#status-online").removeClass("active");
+        $("#status-away").removeClass("active");
+        $("#status-busy").removeClass("active");
+        $("#status-offline").removeClass("active");
+        $(this).addClass("active");
+        
+        if($("#status-online").hasClass("active")) {
+          $("#profile-img").addClass("online");
+        } else if ($("#status-away").hasClass("active")) {
+          $("#profile-img").addClass("away");
+        } else if ($("#status-busy").hasClass("active")) {
+          $("#profile-img").addClass("busy");
+        } else if ($("#status-offline").hasClass("active")) {
+          $("#profile-img").addClass("offline");
+        } else {
+          $("#profile-img").removeClass();
+        };
+        
+        $("#status-options").removeClass("active");
+      });
+    //////////////////////////////////////////////////////////////////
 
-
-
+    // Initiating Form for the mesaging system
     this.chatForm = this.formBuilder.group({
       'message' : [null, Validators.required]
     });
+    //////////////////////////////////////////////////////////////////
 
+    // Subscription for incoming calls
+    // after call has been this section will open the modal responsible for..
+    // handling incoming calls.
+
+    this.user$.subscribe(async user => {
+      this.profileData = user;
+      if (user) {
+
+        // Subscription: listeningg for incoming video calls
+        collectionData(
+          query(
+            collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
+            where('videoCallTo.uid', '==', this.profileData.uid),
+            where('videoCallTo.callStatus', '==', 'calling')
+          ), { idField: 'id' }
+        ).subscribe(resData => {
+          if (resData.length >= 1) {
+            this.onReceivingCallModal(resData[0])
+          } else {
+            // There's currently no incoming calls display nothing.
+            const dialogRef = this.dialog.closeAll();
+          }
+        });
+
+        // Subscription listening for the call status: it gets answered
+        // if the call was accepted it would initiate the call procedure.
+        collectionData(
+          query(
+            collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
+            where('videoCallTo.uid', '==', this.profileData.uid),
+            where('videoCallTo.callStatus', '==', 'call accepted')
+          ), { idField: 'id' }
+        ).subscribe(resData => {
+          if (resData.length >= 1) {
+            this.videoCallInProgress = true;
+          } 
+        })
+
+      };
+
+    });
+
+
+  
     
   }
 
@@ -271,15 +332,6 @@ export class ChatComponent implements OnInit {
 
   }
 
-  onMakeVideoCall() {
-    const videoCallFrom = {uid:'', displayName:'', callID:''};
-    videoCallFrom.uid = this.profileData.uid;
-    videoCallFrom.displayName = this.profileData.displayName;
-    videoCallFrom.callID = ''
-
-    const videoCallTo = {uid:'', displayName:'', callID: ''}
-  }
-
   async onStartNewMessageOtherMember(otherMember:any) {
     const newDate: any = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
     const messageFor = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'',readMessage:'', unReadMessage:0}
@@ -316,10 +368,11 @@ export class ChatComponent implements OnInit {
   // which will be used to send a message
   async onAddOpenedUserChat(userData:any, event:Event) {
     this.openedChatUserData = userData;
+    console.log("the clicked contact user details", this.openedChatUserData)
 
     // Highlights the selected contact on left handside/ contacts panel.
     const clickedContactElementID = (<HTMLElement>event.currentTarget).id
-    console.log("the clicked contact", clickedContactElementID)
+   
 
     if (this.sidePanelContactClassID === undefined) {
       let element = document.getElementById(clickedContactElementID);
@@ -659,13 +712,65 @@ export class ChatComponent implements OnInit {
 
 
 
+onReceivingCallModal(incomingCallData:any) {
+  const dialogRef = this.dialog.open(ReceiveVideoCallModalComponent , {
+    width: '420px',
+    data: {'userData': incomingCallData}
+  });
+
+  dialogRef.afterClosed().subscribe(async result => {
+    //await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid));
+    console.log('The dialog was closed');
+  });
+}
+
+
+
+openMakingVideoCallModal(): void {
+
+  const dialogRef = this.dialog.open(MakeVideoCallModalComponent , {
+    width: '430px',
+    data: {'userData': this.openedChatUserData}
+  });
+
+  this.onMakeVideoCall()
+
+  dialogRef.afterClosed().subscribe(async result => {
+    if (result.callStatus == 'call denied') {
+      // Delete call data from the database after call being denied.
+      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid));
+
+    } else if (result.callStatus == 'call accepted'){
+      // If call was accepted display the video component and hide the chat component.
+      this.videoCallInProgress = true;
+    }
+   
+    console.log('The dialog was closed');
+  });
+}
 
 
 
 
+  async onMakeVideoCall() {
 
+  const videoCallFrom = {uid:'', displayName:'', callID:'', photoURL:'', callStatus:''};
+  videoCallFrom.uid = this.profileData.uid;
+  videoCallFrom.displayName = this.profileData.displayName;
+  videoCallFrom.photoURL = this.profileData.photoURL;
+  videoCallFrom.callID = '';
+  videoCallFrom.callStatus = 'calling';
 
+  const videoCallTo = {uid:'', displayName:'', callID: '',photoURL:'',callStatus:''}
+  videoCallTo.uid = this.openedChatUserData.messageWith.uid;
+  videoCallTo.displayName = this.openedChatUserData.messageWith.displayName;
+  videoCallTo.photoURL = this.openedChatUserData.messageWith.photoURL;
+  videoCallTo.callID = '';
+  videoCallTo.callStatus = 'calling';
 
+  const inProgressVideoCallRoom = doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid);
+  await setDoc(inProgressVideoCallRoom ,  {videoCallFrom,videoCallTo});
+}
 
 
     

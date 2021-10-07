@@ -40,6 +40,10 @@ import { FooterComponent } from './components/footer/footer.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { ComponentsModule } from './components/components.module';
+import { MakeVideoCallModalComponent } from './modals/make-video-call-modal/make-video-call-modal.component';
+import { ReceiveVideoCallModalComponent } from './modals/receive-video-call-modal/receive-video-call-modal.component';
+
+
 
 
 
@@ -52,6 +56,10 @@ import { ComponentsModule } from './components/components.module';
     AppComponent,
     HomeComponent,
     AuthenticationComponent,
+    MakeVideoCallModalComponent, 
+    ReceiveVideoCallModalComponent
+
+  
   
 
   ],
@@ -76,10 +84,13 @@ import { ComponentsModule } from './components/components.module';
     NgbModule,
     MatIconModule,
     ComponentsModule,
-    ToastrModule.forRoot()
+    ToastrModule.forRoot({
+      
+    })
   ],
   providers: [AuthService, CallService, DatePipe],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  exports:[MakeVideoCallModalComponent, ReceiveVideoCallModalComponent]
 })
 export class AppModule {
 

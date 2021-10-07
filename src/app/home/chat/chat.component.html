@@ -2,7 +2,7 @@
 
 
 
-  <div class=" content">
+  <div *ngIf="!videoCallInProgress" class=" content">
     <div  class=" row">
       <div class=" col-md-12">
 
@@ -68,7 +68,7 @@
               <p>{{ openedChatUserData.messageWith.displayName }}</p>
               
               <div class="social-media">
-                <mat-icon style="transform: scale(1);"> call</mat-icon>
+                <mat-icon (click)="openMakingVideoCallModal()" style="transform: scale(1);"> call</mat-icon>
                 <mat-icon (click)="showNotification('top', 'center')" >video_call</mat-icon>
                 
               </div>
@@ -152,5 +152,5 @@
       </div>
     </div>
   </div>
-  <app-video></app-video>
+  <app-video *ngIf="videoCallInProgress"></app-video>
   

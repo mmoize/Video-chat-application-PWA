@@ -32,6 +32,7 @@ export class CallinfoDialogComponent implements OnInit {
 }
 
 export interface DialogData {
+  [x: string]: any;
   peerId?: String| any;
   joinCall: boolean
 }

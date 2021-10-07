@@ -1,0 +1,18 @@
+<div style="background: transparent;" mat-dialog-content >
+
+<div *ngIf="!callDenied" mat-dialog-actions >
+    <mat-icon  style="transform: scale(1.5);margin-right:5%"> call</mat-icon>
+  <h1 style="color: black;font-size:2em;font-weight:bolder;margin-top:15px">
+    Calling {{data.userData.messageWith.displayName |titlecase}}
+  </h1>
+  <img style="width: 40px;height:40px;margin-top:10px;margin-left:5px;margin-right:5px" src="./assets/img/video-ring-gif.gif" />
+  <button style="margin-top: 5px;"  class=" btn btn-fill btn-danger" mat-button [mat-dialog-close]="true">End Call</button>
+</div>
+
+<div *ngIf="callDenied" mat-dialog-actions >
+  <h1 class="myh1" style="color: rgb(223, 199, 199);font-size:2em;font-weight:bolder;margin-top:15px;margin-bottom:10px;margin-left:5px;margin-right:5px;">
+    Couldn't Connect {{data.userData.messageWith.displayName |titlecase}}<br> Call Ended
+  </h1>
+  <button style="margin-bottom: 10px; margin-left:5px;"  class=" btn btn-fill btn-danger" mat-button [mat-dialog-close]="true">Close</button>
+</div>
+</div>
