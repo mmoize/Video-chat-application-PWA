@@ -750,8 +750,6 @@ openMakingVideoCallModal(): void {
 }
 
 
-
-
   async onMakeVideoCall() {
 
   const videoCallFrom = {uid:'', displayName:'', callID:'', photoURL:'', callStatus:''};
@@ -770,6 +768,12 @@ openMakingVideoCallModal(): void {
 
   const inProgressVideoCallRoom = doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid);
   await setDoc(inProgressVideoCallRoom ,  {videoCallFrom,videoCallTo});
+}
+
+
+onVideoCallProgress(inProgress:boolean){
+
+  this.videoCallInProgress = inProgress;
 }
 
 

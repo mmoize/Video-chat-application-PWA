@@ -152,5 +152,5 @@
       </div>
     </div>
   </div>
-  <app-video *ngIf="videoCallInProgress"></app-video>
+  <app-video (videoCallInProgress)="onVideoCallProgress($event)" *ngIf="videoCallInProgress"></app-video>
   

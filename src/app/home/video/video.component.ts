@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable, of } from 'rxjs';
 import { map, filter, scan, switchMap, take } from 'rxjs/operators';
@@ -27,7 +27,8 @@ import {
   getDocs,
   FieldPath,
   WhereFilterOp,
-  orderBy
+  orderBy,
+  deleteDoc
 } from '@angular/fire/firestore';
 import {
   Auth,
@@ -62,11 +63,12 @@ export class VideoComponent implements OnInit {
 
   user$!: Observable<User | null | unknown>;
   currentUserData:any;
+  callerUserData:any;
 
   public isCallStarted$: Observable<boolean>;
   private peerId!: String;
 
-
+  @Output() videoCallInProgress = new EventEmitter<boolean>();
   
 
 
@@ -89,76 +91,6 @@ export class VideoComponent implements OnInit {
 
       this.currentUserData = user;
      
-      // if (user){
-      //   // Subscription When user recieves a call
-      //   setTimeout(() =>{ 
-      //     collectionData(
-      //       query(
-      //         collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
-      //         where('videoCallTo.uid', '==', this.currentUserData.uid),
-      //         where('videoCallTo.callStatus', '==', 'call accepted')
-      //       ), { idField: 'id' }
-      //     ).pipe(take(1)).subscribe(resData => {
-      //       if (resData.length >= 1) {
-      //         console.log("received calling data", resData[0]);
-      //         const CallData = resData[0];
-      //         this.receivingVideoCall(new String(CallData.videoCallTo.callID));
-      //         //this.receivingVideoCall(this.peerId);
-      //       }
-      //     });
-      //     }, 3000);
-
-      //   // Subscription when current user made the call
-      //   setTimeout(() =>{ 
-      //     collectionData(
-      //       query(
-      //         collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
-      //         where('videoCallFrom.uid', '==', this.currentUserData.uid),
-      //         where('videoCallTo.callStatus', '==', 'call accepted')
-      //       ), { idField: 'id' }
-      //     ).pipe(take(1)).subscribe(async resData => {
-      //       if (resData.length >= 1) {
-      //         const currentvideoChatRoom = doc(this.afs, 'in-progress-video-call/'+ this.currentUserData.uid);
-      //         await setDoc(currentvideoChatRoom, {
-      //             videoCallFrom:{
-      //               callID: this.peerId
-      //             },
-      //           videoCallTo:{
-      //             callID: this.peerId
-      //            }
-      //           }, {merge: true} 
-      //         );
-      //         this.makingVedeoCall();
-      //       }
-      //     });
-      //     }, 2000);
-      // };
-
-    });
-
-  }
-
-  ngOnInit(): void {
-
-    this.callService.localStream$
-    .pipe(filter(res => !!res))
-    .subscribe(stream => this.localVideo.nativeElement.srcObject = stream)
-    this.callService.remoteStream$
-    .pipe(filter(res => !!res))
-    .subscribe(stream => this.remoteVideo.nativeElement.srcObject = stream)
-    
-    this.onInitiateCallingSystem();
-  }
-
-
-
-
-  onInitiateCallingSystem() {
-    //this.user$ = authState(auth);
-    this.user$.subscribe(async user => {
-
-      this.currentUserData = user;
-     
       if (user){
         // Subscription When user recieves a call
         setTimeout(() =>{ 
@@ -170,49 +102,65 @@ export class VideoComponent implements OnInit {
             ), { idField: 'id' }
           ).pipe(take(1)).subscribe(resData => {
             if (resData.length >= 1) {
-              console.log("received calling data", resData[0]);
               const CallData = resData[0];
-              this.receivingVideoCall(new String(CallData.videoCallTo.callID));
+              this.callerUserData = CallData
+              this.receivingVideoCall(CallData.videoCallTo.callID);
               //this.receivingVideoCall(this.peerId);
             }
           });
-          }, 3000);
+          }, 1000);
 
-        // Subscription when current user made the call
-        setTimeout(() =>{ 
-          collectionData(
-            query(
-              collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
-              where('videoCallFrom.uid', '==', this.currentUserData.uid),
-              where('videoCallTo.callStatus', '==', 'call accepted')
-            ), { idField: 'id' }
-          ).pipe(take(1)).subscribe(async resData => {
-            if (resData.length >= 1) {
-              const currentvideoChatRoom = doc(this.afs, 'in-progress-video-call/'+ this.currentUserData.uid);
-              await setDoc(currentvideoChatRoom, {
-                  videoCallFrom:{
-                    callID: this.peerId
-                  },
-                videoCallTo:{
+        // Subscription when current user made the call 
+        collectionData(
+          query(
+            collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
+            where('videoCallFrom.uid', '==', this.currentUserData.uid),
+            where('videoCallTo.callStatus', '==', 'call accepted')
+          ), { idField: 'id' }
+        ).pipe(take(1)).subscribe(async resData => {
+          if (resData.length >= 1) {
+            const currentvideoChatRoom = doc(this.afs, 'in-progress-video-call/'+ this.currentUserData.uid);
+            await setDoc(currentvideoChatRoom, {
+                videoCallFrom:{
                   callID: this.peerId
-                 }
-                }, {merge: true} 
-              );
-              this.makingVedeoCall();
-            }
-          });
-          }, 2000);
+                },
+              videoCallTo:{
+                callID: this.peerId
+                }
+              }, {merge: true} 
+            );
+            this.makingVedeoCall();
+          }
+        });
       };
 
+      
+
     });
+
   }
+
+  ngOnInit(): void {
+
+    this.callService.localStream$
+    .pipe(filter(res => !!res))
+    .subscribe(stream => this.localVideo.nativeElement.srcObject = stream)
+
+    this.callService.remoteStream$
+    .pipe(filter(res => !!res))
+    .subscribe(stream => this.remoteVideo.nativeElement.srcObject = stream)
+    
+    
+  }
+
 
   ngOnDestroy(): void {
     this.callService.destroyPeer(); 
   }
 
 
-  receivingVideoCall(callID:any) {
+  receivingVideoCall(callID:string) {
+    console.log("media connection id", callID);
     this.callService.establishMediaCall(callID);
   }
 
@@ -237,8 +185,19 @@ export class VideoComponent implements OnInit {
       .subscribe(_  => { });
   }
 
-  public endCall(){
+  public async endCall(){
+    // close the media service after the conclusion of the video call.
     this.callService.closeMediaCall();
+
+    // Delete calling profile from the database after the conclusion of the video call
+    if (this.callerUserData){
+      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.callerUserData.videoCallFrom.uid));
+    } else {
+      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.currentUserData.uid));
+    }
+
+    this.videoCallInProgress.emit(false);
+   
   }
 
 }
