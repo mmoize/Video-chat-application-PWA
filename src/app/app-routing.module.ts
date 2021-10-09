@@ -10,17 +10,10 @@ import { HomeComponent } from './home/home.component';
 const routes: Routes = [
   {
     path: "",
-    redirectTo: "video",
+    redirectTo: "chat",
     pathMatch: "full"
   },
-  // {
-  //   path: "",
-  //   loadChildren: () => import ("./home/home.module").then(m => m.HomeModule)
-  // },
-  // {
-  //   path: "",
-  //   loadChildren: () => import ("./authentication/authentication.module").then(m => m. AuthenticationModule)
-  // },
+
   {
     path: "",
     component: HomeComponent,

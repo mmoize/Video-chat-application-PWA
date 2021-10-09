@@ -45,6 +45,7 @@ import { ComponentsModule } from './components/components.module';
 import { MakeVideoCallModalComponent } from './modals/make-video-call-modal/make-video-call-modal.component';
 import { ReceiveVideoCallModalComponent } from './modals/receive-video-call-modal/receive-video-call-modal.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
+import { SplashScreenComponent } from './splash-screen/splash-screen.component';
 
 
 
@@ -60,7 +61,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     HomeComponent,
     AuthenticationComponent,
     MakeVideoCallModalComponent, 
-    ReceiveVideoCallModalComponent
+    ReceiveVideoCallModalComponent, SplashScreenComponent
 
   
   
