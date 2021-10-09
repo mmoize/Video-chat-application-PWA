@@ -195,6 +195,7 @@ async emailLogin(email: string, password: string):Promise<any> {
     });
     console.log("logged in user", resData);
     this.setUserData(resData.user);
+    this.router.navigate(['/chat']);
   }).catch((error) => {
     console.log("Issue with email login", error);
     window.alert(error.message);
@@ -249,7 +250,7 @@ async resetPassword(email: string): Promise<any> {
     displayName: userProfile.displayName,
     uid: userProfile.uid,
     status : 'online'
-  });
+  },);
 
   const dbRef = ref(getDatabase());
   get(child(dbRef, `users/${userProfile.uid}`)).then((snapshot) => {
@@ -263,9 +264,7 @@ async resetPassword(email: string): Promise<any> {
   });
 
 
-  return await setDoc(userRef, {userData}, {
-    merge: true
-  } )
+  return await setDoc(userRef, {userData}, {merge: true} )
 
 }
 
@@ -299,8 +298,17 @@ async oAuthLogin(p: string): Promise<void> {
 
 
 
-logout() {
+  async logout() {
+
+  const db = getDatabase();
+  await set(ref(db, `users/${this.userData.uid}`), {
+    status : 'offline',
+    displayName: this.userData.displayName,
+    uid: this.userData.uid,
+  });
   localStorage.removeItem('user');
+  this.router.navigate(['/login']);
+
 }
 
 
