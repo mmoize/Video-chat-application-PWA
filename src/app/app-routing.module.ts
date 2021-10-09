@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule, Routes } from '@angular/router';
+import { AuthGuard } from './authentication/auth.guard';
 import { AuthenticationComponent } from './authentication/authentication.component';
 import { HomeComponent } from './home/home.component';
 
@@ -26,7 +27,7 @@ const routes: Routes = [
     children: [
       {
         path: "",
-        loadChildren: () => import ("./home/home.module").then(m => m.HomeModule)
+        loadChildren: () => import ("./home/home.module").then(m => m.HomeModule), canActivate: [AuthGuard]
       },
     ]
   },
@@ -42,7 +43,7 @@ const routes: Routes = [
   },
   {
     path: "**",
-    redirectTo: "video"
+    redirectTo: "chat"
   }
 ];
 

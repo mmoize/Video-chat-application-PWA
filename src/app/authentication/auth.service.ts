@@ -299,6 +299,9 @@ async oAuthLogin(p: string): Promise<void> {
 
 
 
+logout() {
+  localStorage.removeItem('user');
+}
 
 
 

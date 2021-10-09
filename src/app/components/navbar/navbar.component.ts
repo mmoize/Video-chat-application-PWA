@@ -50,6 +50,7 @@ import {
   onAuthStateChanged
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs';
+import { AuthService } from 'src/app/authentication/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -78,6 +79,7 @@ export class NavbarComponent implements OnInit, OnDestroy  {
     private element: ElementRef,
     private router: Router,
     private modalService: NgbModal,
+    private authservice:AuthService,
     private auth: Auth,
     private afs: Firestore,
   ) {
@@ -273,6 +275,12 @@ export class NavbarComponent implements OnInit, OnDestroy  {
   }
   ngOnDestroy(){
      window.removeEventListener("resize", this.updateColor);
+  }
+
+
+
+  onLogOut() {
+    this.authservice.logout();
   }
 
 }
