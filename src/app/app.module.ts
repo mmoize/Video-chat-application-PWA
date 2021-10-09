@@ -33,7 +33,7 @@ from '@angular/fire/analytics';
 
 
 import { AuthenticationComponent } from './authentication/authentication.component';
-import { environment } from 'src/environments/environment';
+import { environment } from 'src/environments/environment.prod';
 import { AuthService } from './authentication/auth.service';
 import { ChatComponent } from './home/chat/chat.component';
 import { CallService } from './call.service';

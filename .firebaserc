@@ -1,4 +1,7 @@
 {
+  "projects": {
+    "production": "video-chat-app-pwa"
+  },
   "targets": {
     "video-chat-app-pwa": {
       "hosting": {
