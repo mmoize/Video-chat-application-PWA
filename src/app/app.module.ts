@@ -44,6 +44,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { ComponentsModule } from './components/components.module';
 import { MakeVideoCallModalComponent } from './modals/make-video-call-modal/make-video-call-modal.component';
 import { ReceiveVideoCallModalComponent } from './modals/receive-video-call-modal/receive-video-call-modal.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 
 
@@ -89,6 +90,12 @@ import { ReceiveVideoCallModalComponent } from './modals/receive-video-call-moda
     ComponentsModule,
     ToastrModule.forRoot({
       
+    }),
+    ServiceWorkerModule.register('ngsw-worker.js', {
+      enabled: environment.production,
+      // Register the ServiceWorker as soon as the app is stable
+      // or after 30 seconds (whichever comes first).
+      registrationStrategy: 'registerWhenStable:30000'
     })
   ],
   providers: [AuthService, CallService, DatePipe],
