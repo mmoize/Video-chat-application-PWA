@@ -124,7 +124,7 @@ export class VideoComponent implements OnInit {
                 videoCallFrom:{
                   callID: this.peerId
                 },
-              videoCallTo:{
+              videoCallTo:{ 
                 callID: this.peerId
                 }
               }, {merge: true} 
@@ -154,8 +154,15 @@ export class VideoComponent implements OnInit {
   }
 
 
-  ngOnDestroy(): void {
+  async ngOnDestroy(): Promise<void> {
     this.callService.destroyPeer(); 
+
+    if (this.callerUserData){
+      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.callerUserData.videoCallFrom.uid));
+    } else {
+      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.currentUserData.uid));
+    }
+
   }
 
 

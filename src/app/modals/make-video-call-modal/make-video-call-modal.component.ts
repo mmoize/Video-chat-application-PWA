@@ -125,7 +125,10 @@ export class MakeVideoCallModalComponent implements OnInit {
                 this.callDenied = true;
             }
         });
+    }
 
-  }
+    async endCall() {
+        await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.curentUserData.uid));
+    }
 
 }

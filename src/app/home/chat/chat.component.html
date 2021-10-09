@@ -1,7 +1,4 @@
 
-
-
-
   <div *ngIf="!videoCallInProgress" class=" content">
     <div  class=" row">
       <div class=" col-md-12">
@@ -45,7 +42,7 @@
                     <span 
                     *ngIf="chat.messageFor.unReadMessage != 0" 
                     class="contact-status online">{{chat.messageFor.unReadMessage}}</span>
-                    <span *ngIf="chat.messageFor.unReadMessage == 0"  class="contact-status online"></span>
+                    <span *ngIf="chat.messageFor.unReadMessage == 0" id="{{'contact-status'+i}}"  class="contact-status offline"></span>
                     <img style="object-fit: cover;" [src]="chat.messageWith.photoURL" alt="" />
                     <div class="meta">
                       <p class="name">{{chat.messageWith.displayName |titlecase}}</p>
@@ -69,7 +66,7 @@
               
               <div class="social-media">
                 <mat-icon (click)="openMakingVideoCallModal()" style="transform: scale(1);"> call</mat-icon>
-                <mat-icon (click)="showNotification('top', 'center')" >video_call</mat-icon>
+                <mat-icon (click)="openMakingVideoCallModal()" (click)="showNotification('top', 'center')" >video_call</mat-icon>
                 
               </div>
             </div>
@@ -119,9 +116,6 @@
                         search
                     </i>
                 </button>
-
-
-
               </div>
 
               <div style="margin-top: 35%;"  class="messages">
@@ -137,7 +131,7 @@
                         </mat-card-title-group>
                         <mat-card-footer style="margin-left:0%;"> 
                           <mat-icon style="margin-right: 4%;">add_circle_outline</mat-icon>
-                          <mat-icon style="margin-left: 4%;" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
+                          <mat-icon style="margin-left: 4%;cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
                         </mat-card-footer>
                       </mat-card>
                     </div>

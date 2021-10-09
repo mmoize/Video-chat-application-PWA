@@ -49,7 +49,6 @@ import {
   onAuthStateChanged
 } from '@angular/fire/auth';
 import {   QuerySnapshot,  getFirestore, startAt, endAt, limit} from '@firebase/firestore';
-import { getDatabase, ref, onValue, Database} from "firebase/database";
 import { map, take } from 'rxjs/operators';
 import * as $ from "jquery"
 import { Observable } from 'rxjs';
@@ -61,6 +60,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MakeVideoCallModalComponent } from 'src/app/modals/make-video-call-modal/make-video-call-modal.component';
 import { ReceiveVideoCallModalComponent } from 'src/app/modals/receive-video-call-modal/receive-video-call-modal.component';
 import { CallService } from 'src/app/call.service';
+import { getDatabase, ref, onValue, onDisconnect, set, get, child } from "firebase/database";
 
 
 
@@ -124,7 +124,7 @@ export class ChatComponent implements OnInit {
 
   profileData:any;
   currentUser:any;
-  currentUserChats:any;
+  currentUserChats: any[] = [];
 
   searchValue: string = "";
   results!: any[];
@@ -168,8 +168,48 @@ export class ChatComponent implements OnInit {
               orderBy('messageFor.date', 'desc')
             ), { idField: 'id' }
           ).subscribe(resData => {
-            console.log('Loading user contacts', resData)
-            this.currentUserChats = resData
+            const response = resData
+            this.currentUserChats = [];
+            
+            response.forEach(async newResData => {
+ 
+              const eachRes = newResData;
+              this.currentUserChats.push(newResData)
+
+              const db = getDatabase();
+              const userPresenceRef = ref(db, 'users/' + newResData.messageWith.uid);
+
+              await onValue(userPresenceRef, async (snapshot) => {
+                const data = snapshot.val();             
+                this.currentUserChats.forEach(x => {
+                  x.messageWith.status = data.status
+                })
+                // Update Ui after user's change of status
+                const index = this.currentUserChats.findIndex(x => x.id === newResData.id);
+                console.log('chaning presence index', index);
+                let element = document.getElementById('contact-status'+index);
+                if (data.status === 'offline') {
+                  element?.classList.remove("online")
+                  element?.classList.add('offline');
+                } else if (data.status === 'online') {
+                  element?.classList.remove("offline")
+                  element?.classList.add('online');
+                }
+
+                // Updating current user Contact list.
+                // const currentUserChatRoomID = this.profileData.uid+newResData.messageWith.uid;
+                // const currentMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+ currentUserChatRoomID);
+                // await setDoc(currentMemberUserChatRoom, {
+                //   messageWith:{
+                //     status:data.status,
+                //   }
+                // }, {merge: true} 
+                // );
+
+                console.log('chaning presence 2',this.currentUserChats);
+              });
+              //this.currentUserChats.push(eachRes)
+            });
           })
 
           
@@ -281,11 +321,7 @@ export class ChatComponent implements OnInit {
 
     });
 
-
-  
-    
   }
-
 
   openAddContacts() {
 
@@ -301,34 +337,49 @@ export class ChatComponent implements OnInit {
 
     console.log("just added a new message", sendToUserData);
 
-    const newDate: any = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
-    const messageFor = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'',readMessage:''}
-    messageFor.displayName = this.profileData.displayName;
-    messageFor.uid = this.profileData.uid;
-    messageFor.date = newDate;
-    messageFor.type = 'newMessageCreated';
-    messageFor.createdMessage = 'true';
-    messageFor.photoURL = this.profileData.photoURL;
-    messageFor.message = '';
-    messageFor.readMessage = ''
+    collectionData(
+      query(
+        collection(this.afs, 'userchatsrooms/') as CollectionReference<any>,
+        where('id', '==', this.profileData.uid+sendToUserData.uid)
+      ), { idField: 'id' }
+    ).pipe(take(1)).subscribe(async resData => {
+      if (resData.length >=1) {
+        // show notification that you've already added this particular from to your 
+        // conversation
+      } else {
 
-    const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:''}
-    messageWith.displayName = sendToUserData.displayName;
-    messageWith.uid = sendToUserData.uid;
-    messageWith.date = newDate;
-    messageWith.type = 'newMessageCreated';
-    messageWith.createdMessage = 'false';
-    messageWith.photoURL = sendToUserData.photoURL;
-    messageWith.message = '';
-    messageWith.readMessage
+        const newDate: any = this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+        const messageFor = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'',readMessage:''}
+        messageFor.displayName = this.profileData.displayName;
+        messageFor.uid = this.profileData.uid;
+        messageFor.date = newDate;
+        messageFor.type = 'newMessageCreated';
+        messageFor.createdMessage = 'true';
+        messageFor.photoURL = this.profileData.photoURL;
+        messageFor.message = '';
+        messageFor.readMessage = ''
+    
+        const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:''}
+        messageWith.displayName = sendToUserData.displayName;
+        messageWith.uid = sendToUserData.uid;
+        messageWith.date = newDate;
+        messageWith.type = 'newMessageCreated';
+        messageWith.createdMessage = 'false';
+        messageWith.photoURL = sendToUserData.photoURL;
+        messageWith.message = '';
+        messageWith.readMessage
+    
+        const userChatRoomID = this.profileData.uid+sendToUserData.uid;
+    
+        //await addDoc(collection(this.afs, 'userchatsrooms/'+userChatRoomID), {messageFor,messageWith});
+        const newUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+        await setDoc(newUserChatRoom,  {messageFor,messageWith} );
+    
+        this.onStartNewMessageOtherMember(sendToUserData);
 
-    const userChatRoomID = this.profileData.uid+sendToUserData.uid;
 
-    //await addDoc(collection(this.afs, 'userchatsrooms/'+userChatRoomID), {messageFor,messageWith});
-    const newUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
-    await setDoc(newUserChatRoom,  {messageFor,messageWith} );
-
-    this.onStartNewMessageOtherMember(sendToUserData);
+      };
+    })
 
   }
 
@@ -345,7 +396,7 @@ export class ChatComponent implements OnInit {
     messageFor.readMessage='';
     messageFor.unReadMessage =0;
 
-    const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:'',unReadMessage: 0}
+    const messageWith = {displayName:'', uid:'', date:'', type:'', createdMessage:'', photoURL:'', message:'', readMessage:'',unReadMessage: 0, status:''}
     messageWith.displayName = this.profileData.displayName;
     messageWith.uid = this.profileData.uid;
     messageWith.date = newDate;
@@ -355,6 +406,8 @@ export class ChatComponent implements OnInit {
     messageWith.message = "";
     messageWith.readMessage= "";
     messageWith.unReadMessage= 0;
+    messageWith.status = '';
+
 
     const userChatRoomID = otherMember.uid+this.profileData.uid;
 
@@ -373,7 +426,6 @@ export class ChatComponent implements OnInit {
     // Highlights the selected contact on left handside/ contacts panel.
     const clickedContactElementID = (<HTMLElement>event.currentTarget).id
    
-
     if (this.sidePanelContactClassID === undefined) {
       let element = document.getElementById(clickedContactElementID);
       element?.classList.add('active');
@@ -725,54 +777,81 @@ onReceivingCallModal(incomingCallData:any) {
 }
 
 
+showNotificationUserCurrentlyInCall(from:any, align:any){
+  this.toastr.info('<span class="tim-icons icon-alert-circle-exc" [data-notify]="icon"></span> Currently on another call </b> - give it a few minutes and try again.', '', {
+    disableTimeOut: true,
+    closeButton: true,
+    enableHtml: true,
+    toastClass: "alert alert-warning alert-with-icon",
+    positionClass: 'toast-' + from + '-' +  align
+  }); 
+}
+
+
 
 openMakingVideoCallModal(): void {
+  collectionData(
+    query(
+      collection(this.afs, 'in-progress-video-call/') as CollectionReference<any>,
+      where('videoCallFrom.membersUID', 'array-contains-any', [this.openedChatUserData.messageWith.uid]),
+    ), { idField: 'id' }
+  ).pipe(take(1)).subscribe(resData => {
+    if (resData.length >= 1) {
+      
+      this.showNotificationUserCurrentlyInCall('top', 'center');
 
-  const dialogRef = this.dialog.open(MakeVideoCallModalComponent , {
-    width: '430px',
-    data: {'userData': this.openedChatUserData}
+    } else {
+
+      const dialogRef = this.dialog.open(MakeVideoCallModalComponent , {
+        width: '430px',
+        data: {'userData': this.openedChatUserData}
+      });
+    
+      this.onMakeVideoCall()
+    
+      dialogRef.afterClosed().subscribe(async result => {
+        if (result.callStatus == 'call denied') {
+          // Delete call data from the database after call being denied.
+          await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid));
+    
+        } else if (result.callStatus == 'call accepted'){
+          // If call was accepted display the video component and hide the chat component.
+          this.videoCallInProgress = true;
+        }
+      });
+
+    };
   });
 
-  this.onMakeVideoCall()
-
-  dialogRef.afterClosed().subscribe(async result => {
-    if (result.callStatus == 'call denied') {
-      // Delete call data from the database after call being denied.
-      await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid));
-
-    } else if (result.callStatus == 'call accepted'){
-      // If call was accepted display the video component and hide the chat component.
-      this.videoCallInProgress = true;
-    }
-   
-    console.log('The dialog was closed');
-  });
 }
+
+
 
 
   async onMakeVideoCall() {
 
-  const videoCallFrom = {uid:'', displayName:'', callID:'', photoURL:'', callStatus:''};
+  const videoCallFrom = {uid:'', displayName:'', callID:'', photoURL:'', callStatus:'', membersUID: ['']};
   videoCallFrom.uid = this.profileData.uid;
   videoCallFrom.displayName = this.profileData.displayName;
   videoCallFrom.photoURL = this.profileData.photoURL;
   videoCallFrom.callID = '';
   videoCallFrom.callStatus = 'calling';
+  videoCallFrom.membersUID = [this.profileData.uid, this.openedChatUserData.messageWith.uid]
 
-  const videoCallTo = {uid:'', displayName:'', callID: '',photoURL:'',callStatus:''}
+  const videoCallTo = {uid:'', displayName:'', callID: '',photoURL:'',callStatus:'', membersUID: ['']}
   videoCallTo.uid = this.openedChatUserData.messageWith.uid;
   videoCallTo.displayName = this.openedChatUserData.messageWith.displayName;
   videoCallTo.photoURL = this.openedChatUserData.messageWith.photoURL;
   videoCallTo.callID = '';
   videoCallTo.callStatus = 'calling';
+  videoCallFrom.membersUID = [this.openedChatUserData.messageWith.uid, this.profileData.uid]
 
   const inProgressVideoCallRoom = doc(this.afs, 'in-progress-video-call/'+ this.profileData.uid);
   await setDoc(inProgressVideoCallRoom ,  {videoCallFrom,videoCallTo});
 }
 
-
+// Close video call component after ending the call.
 onVideoCallProgress(inProgress:boolean){
-
   this.videoCallInProgress = inProgress;
 }
 

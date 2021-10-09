@@ -29,7 +29,7 @@ import {
   docData,
   DocumentReference,
   CollectionReference,
-  Firestore,
+  Firestore, 
   onSnapshot,
   query,
   where,
@@ -45,6 +45,7 @@ import { switchMap, take } from 'rxjs/operators';
 import { Collection } from 'typescript';
 import { UserData } from '../shared/user';
 import { setDoc } from '@firebase/firestore';
+import { getDatabase, ref, onValue, onDisconnect, set, get, child,  } from "firebase/database";
 
 
 
@@ -65,25 +66,33 @@ export class AuthService {
     public router: Router,  
     public ngZone: NgZone // NgZone service to remove outside scope warning
   ) { 
-
-  // user observable, not user doc
-  //this.user$ = user(auth);
-
-  // // or use this version...
+  
   this.user$ = authState(auth);
-
-  // // or use this version...
-  // this.user$ = new Observable((observer: any) =>
-  //   onAuthStateChanged(auth, observer)
-  // );
-
+  const db = getDatabase();
+  const connectedRef = ref(db, ".info/connected");
+  
 
   this.user$.subscribe(user => {
     if (user) {
+
       this.userData = user;
       localStorage.setItem('user', JSON.stringify(this.userData.providerData[0]));
       JSON.parse(localStorage.getItem('user') || '{}');
-      console.log("saving data",JSON.parse(localStorage.getItem('user') || '{}') )
+      
+      const presenceRef = ref(db, 'users/' + this.userData.uid);
+
+      set(ref(db, 'users/' + this.userData.uid), {
+        displayName: this.userData.displayName,
+        uid: this.userData.uid,
+        status : 'online'
+      });
+
+      onDisconnect(presenceRef).set({
+        displayName: this.userData.displayName,
+        uid: this.userData.uid,
+        status : 'offline'
+      })
+
     };
   })
 
@@ -223,6 +232,7 @@ async resetPassword(email: string): Promise<any> {
   console.log("user uiid", user.providerData[0])
   const userProfile = user;
   const userRef = doc( this.afs,`user/${user.uid}`);
+  const db = getDatabase();
   console.log("user uiid",userProfile)
   
   const userData: UserData = {
@@ -233,6 +243,25 @@ async resetPassword(email: string): Promise<any> {
     emailVerified: user.emailVerified,
     status:'online'
   }
+
+
+  await set(ref(db, `users/${userProfile.uid}`), {
+    displayName: userProfile.displayName,
+    uid: userProfile.uid,
+    status : 'online'
+  });
+
+  const dbRef = ref(getDatabase());
+  get(child(dbRef, `users/${userProfile.uid}`)).then((snapshot) => {
+  if (snapshot.exists()) {
+    console.log(snapshot.val());
+  } else {
+    console.log("No data available");
+  }
+  }).catch((error) => {
+    console.error(error);
+  });
+
 
   return await setDoc(userRef, {userData}, {
     merge: true

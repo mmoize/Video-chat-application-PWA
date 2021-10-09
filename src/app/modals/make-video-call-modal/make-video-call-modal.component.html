@@ -6,7 +6,7 @@
     Calling {{data.userData.messageWith.displayName |titlecase}}
   </h1>
   <img style="width: 40px;height:40px;margin-top:10px;margin-left:5px;margin-right:5px" src="./assets/img/video-ring-gif.gif" />
-  <button style="margin-top: 5px;"  class=" btn btn-fill btn-danger" mat-button [mat-dialog-close]="true">End Call</button>
+  <button style="margin-top: 5px;" (click)="endCall()"  class=" btn btn-fill btn-danger" mat-button [mat-dialog-close]="true">End Call</button>
 </div>
 
 <div *ngIf="callDenied" mat-dialog-actions >

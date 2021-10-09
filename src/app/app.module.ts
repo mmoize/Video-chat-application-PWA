@@ -24,6 +24,8 @@ import { getAuth, provideAuth }
 from '@angular/fire/auth';
 import { getFirestore, provideFirestore } 
 from '@angular/fire/firestore';
+import { getDatabase, provideDatabase } 
+from '@angular/fire/database';
 import { getStorage, provideStorage } 
 from '@angular/fire/storage';
 import { getAnalytics, provideAnalytics } 
@@ -66,6 +68,7 @@ import { ReceiveVideoCallModalComponent } from './modals/receive-video-call-moda
   imports: [
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideFirestore(() => getFirestore()),
+    provideDatabase(() => getDatabase()),
     provideAuth(() => getAuth()),
     provideStorage(() => getStorage()),
     provideAnalytics(() => getAnalytics()),

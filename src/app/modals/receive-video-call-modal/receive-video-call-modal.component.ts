@@ -25,7 +25,8 @@ import {
     getDocs,
     FieldPath,
     WhereFilterOp,
-    orderBy
+    orderBy,
+    deleteDoc
   } from '@angular/fire/firestore';
   import {
     Auth,
@@ -84,6 +85,7 @@ export class ReceiveVideoCallModalComponent implements OnInit {
       }, {merge: true} 
     );
 
+    await deleteDoc(doc(this.afs, 'in-progress-video-call/'+ this.data.userData.videoCallFrom.uid));
     this.dialogRef.close({callStatus:'call denied'})
   }
 
