@@ -130,8 +130,8 @@
                           <img style="border-radius: 50%;margin-top:4%" mat-card-sm-image [src]="result.userData.photoURL">
                         </mat-card-title-group>
                         <mat-card-footer style="margin-left:0%;"> 
-                          <mat-icon style="margin-right: 4%;">add_circle_outline</mat-icon>
-                          <mat-icon style="margin-left: 4%;cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
+                          <mat-icon id="add-user-icon-circle" style="margin-right: 4%;">add_circle_outline</mat-icon>
+                          <mat-icon id="add-user-icon-chat"  style="margin-left: 4%;cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
                         </mat-card-footer>
                       </mat-card>
                     </div>
