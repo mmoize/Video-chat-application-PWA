@@ -50,12 +50,8 @@ export class AuthGuard implements CanActivate  {
     }
 
     async returnUserDetails() {
-     //const value = await JSON.parse(localStorage.getItem('user') || '{}');
      const value = await localStorage.getItem('user') ;
-      console.log("security value", value)
-  
       if (value === null) {
-        console.log("security value", value)
         this.router.navigate(['/login']);
         return false;
       } else {
