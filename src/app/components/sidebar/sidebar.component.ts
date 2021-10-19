@@ -16,9 +16,9 @@ export const ROUTES: RouteInfo[] = [
     class: ""
   },
   {
-    path: "/groupchatn",
-    title: "Groups",
-    icon: "icon-vector",
+    path: "/profile",
+    title: "Profile",
+    icon: "icon-single-02",
     class: ""
   },
   {

@@ -2,14 +2,14 @@
 <div class="login-wrap"  style="margin-top: 10%;">
 	<div class="login-html">
 
-		<input id="tab-1" type="radio" name="tab" class="sign-in" checked><label for="tab-1" class="tab">Sign In</label>
-		<input id="tab-2" type="radio" name="tab" class="sign-up"><label for="tab-2" class="tab">Sign Up</label>
+		<input id="tab-1" style="font-weight: bolder;" type="radio" name="tab" class="sign-in" checked><label for="tab-1" class="tab">Sign In</label>
+		<input id="tab-2" type="radio" name="tab" class="sign-up"><label for="tab-2" style="font-weight: bolder;" class="tab">Sign Up</label>
 		<div class="login-form">
       <form  [formGroup]="form" class="form">
         <div class="sign-in-htm">
           <div class="group">
             <label for="user" class="label">Email</label>
-            <input formControlName="email"  placeholder="user email" id="user" type="text" class="input">
+            <input style="font-weight: bolder;" formControlName="email"  placeholder="user email" id="user" type="text" class="input">
           </div>
           <div class="group">
             <label for="pass" class="label">Password</label>
