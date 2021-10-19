@@ -54,9 +54,9 @@
               </ul>
             </div>
             <div id="bottom-bar">
-              <button *ngIf="!addContacts" (click)="openAddContacts()" id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Add contact</span></button>
-              <button *ngIf="addContacts" (click)="openChats()"  id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Chats</span></button>
-              <button id="settings"><i class="fa fa-cog fa-fw" aria-hidden="true"></i> <span>Settings</span></button>
+              <button *ngIf="!addContacts && chatOpened  " (click)="openAddContacts()" id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Add contact</span></button>
+              <button *ngIf="addContacts && chatOpened " (click)="openChats()"  id="addcontact"><i class="fa fa-user-plus fa-fw" aria-hidden="true"></i> <span>Chats</span></button>
+              <button id="settings"><i class="fa fa-cog fa-fw" aria-hidden="true"></i> <span></span></button>
             </div>
           </div>
           <div style="overflow: hidden;" *ngIf="!addContacts" class="content-card" (click)="onUpdateContacts()">
@@ -118,20 +118,24 @@
                 </button>
               </div>
 
-              <div style="margin-top: 35%;"  class="messages">
+              <div style="margin-top: 45%;"  class="messages">
                   <div class="search-result" *ngFor="let result of results">
                     <div 
                     layout-gt-xs="row"  
                     style="margin:2%;">
-                      <mat-card  style="padding:10px;border:10px;background:transparent" >
+                      <mat-card   >
+                        <mat-card-title style="margin-left:0%;"> 
+                          <!-- <mat-icon id="add-user-icon-circle" style="margin-right: 4%;">add_circle_outline</mat-icon> -->
+                          <mat-icon id="add-user-icon-chat"  style="cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
+                        </mat-card-title>
                         <mat-card-title-group >
-                          <mat-card-title style="margin-top: 15%;font-weight:bold" class="text-xl push-none">{{result.userData.displayName |titlecase}}</mat-card-title>
-                          <mat-card-subtitle class="push-none">{{result.userData.email}}</mat-card-subtitle>
-                          <img style="border-radius: 50%;margin-top:4%" mat-card-sm-image [src]="result.userData.photoURL">
+                          <mat-card-title style="font-weight:bold;margin-top: 15%;" class="text-xl push-none">{{result.userData.displayName |titlecase}}</mat-card-title>
+                          <mat-card-subtitle class="push-none">Email: {{result.userData.email}}</mat-card-subtitle>
+                          <img style="border-radius: 50%;height:95px;width:95px;object-fit:cover " mat-card-sm-image [src]="result.userData.photoURL">
                         </mat-card-title-group>
                         <mat-card-footer style="margin-left:0%;"> 
-                          <mat-icon id="add-user-icon-circle" style="margin-right: 4%;">add_circle_outline</mat-icon>
-                          <mat-icon id="add-user-icon-chat"  style="margin-left: 4%;cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon>
+                          <mat-icon id="add-user-icon-circle" style="margin-bottom: 4%;">add_circle_outline</mat-icon>
+                          <!-- <mat-icon id="add-user-icon-chat"  style="margin-left: 4%;cursor:pointer" (click)="onStartNewMessage(result.userData)"> message</mat-icon> -->
                         </mat-card-footer>
                       </mat-card>
                     </div>

@@ -130,6 +130,7 @@ export class ChatComponent implements OnInit {
   results!: any[];
 
   addContacts = true;
+  chatOpened = false;
   sidePanelContactClassID:any;
 
 
@@ -207,6 +208,7 @@ export class ChatComponent implements OnInit {
                 // );
 
                 console.log('chaning presence 2',this.currentUserChats);
+                console.log('chaning presence after adding a user',this.currentUserChats[0]);
               });
               //this.currentUserChats.push(eachRes)
             });
@@ -333,6 +335,102 @@ export class ChatComponent implements OnInit {
   }
 
 
+  async openChatsAfterInitiatingNewChat() {
+
+     
+    const userData = this.currentUserChats[0]
+
+    this.chatOpened = true;
+
+    this.openedChatUserData = userData;
+    console.log("the clicked contact user details", this.openedChatUserData)
+
+    // Highlights the selected contact on left handside/ contacts panel.
+    const clickedContactElementID = 'contact0'
+   
+    if (this.sidePanelContactClassID === undefined) {
+      let element = document.getElementById(clickedContactElementID);
+      element?.classList.add('active');
+      this.sidePanelContactClassID = clickedContactElementID;
+    } else {
+      let element = document.getElementById(this.sidePanelContactClassID);
+      element?.classList.remove("active")
+      this.sidePanelContactClassID = clickedContactElementID;
+      let newlySelectelement = document.getElementById(this.sidePanelContactClassID);
+      newlySelectelement?.classList.add('active');
+    }
+
+    
+    
+    //open chats box and close AddContacts box
+    this.addContacts = false;
+
+    // Conversation ID for each the memeber of the conversation
+    // this.profileData = current user UID
+    // this.userData = the other member of the conversation
+
+     const convoID1 =  this.profileData.uid+userData.messageWith.uid
+     const convoID2 =  userData.messageWith.uid+this.profileData.uid
+
+     collectionData(
+      query(
+        collection(this.afs, 'userchats/' ) as CollectionReference,
+        where('chat.conversationID', 'array-contains-any', [convoID1, convoID2]), 
+        orderBy('chat.date', 'asc')
+      ), { idField: 'id' }
+    ).subscribe(resData => {
+      console.log("loading data chats", resData);
+      this.openedchats = [];
+      this.openedchats = resData
+      setTimeout(() => this.scrolltop = this.chatcontent.nativeElement.scrollHeight, 500);
+    });
+
+
+    // Update Each user contact detail status // readMessages // noUnreadMessages.
+
+    // CUrrent User
+    const currentUserChatRoomID = this.profileData.uid+this.openedChatUserData.messageWith.uid;
+    const currentMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+ currentUserChatRoomID);
+    
+    await setDoc(currentMemberUserChatRoom, {
+      messageFor:{
+        data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      },
+      // messageWith:{
+      //   data: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //   readMessage:'',
+      // }
+    }, {merge: true} 
+    );
+
+    // Other Member
+    const userChatRoomID = this.openedChatUserData.messageWith.uid+this.profileData.uid;
+    console.log('the current user, userchatroom id 1', this.openedChatUserData )
+
+    const otherMemberUserChatRoom = doc(this.afs, 'userchatsrooms/'+userChatRoomID);
+    await setDoc(otherMemberUserChatRoom, {
+      // messageFor:{
+      //  date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+      //  readMessage:'false',
+      //  unReadMessage: 0
+      // },
+      messageWith:{
+        date: this.datepipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss'),
+        readMessage:'true',
+        unReadMessage:0
+      }
+    }, {merge: true} 
+    );
+
+
+
+
+
+  }
+
+
   async onStartNewMessage(sendToUserData:any) {
 
     console.log("just added a new message", sendToUserData);
@@ -379,7 +477,10 @@ export class ChatComponent implements OnInit {
 
 
       };
-    })
+    });
+
+    
+    setTimeout(() => this.openChatsAfterInitiatingNewChat(), 1000);
 
   }
 
@@ -420,6 +521,9 @@ export class ChatComponent implements OnInit {
   // Adds the users information for thats chat thats opened to the variable openedCHatuserData
   // which will be used to send a message
   async onAddOpenedUserChat(userData:any, event:Event) {
+    
+    this.chatOpened = true;
+
     this.openedChatUserData = userData;
     console.log("the clicked contact user details", this.openedChatUserData)
 

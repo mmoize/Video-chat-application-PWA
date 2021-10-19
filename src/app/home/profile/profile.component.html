@@ -1,7 +1,7 @@
 <div class=" content">
     <div class=" row">
       <div  class=" col-md-12">
-        <div class=" col-md-4">
+        <div class=" col-md-6">
             <div class=" card card-user">
               <div class=" card-body">
                 <p class=" card-text"></p>
@@ -13,38 +13,34 @@
                   <a href="javascript:void(0)">
                     <img alt="..." class=" avatar" [src]="profileData.photoURL" />
       
-                    <h5 class=" title">{{ profileData.displayName}}</h5>
+                    <h2 class=" title">{{ profileData.displayName |titlecase}}</h2>
                   </a>
-                  <p class=" description">{{profileData.metadata.creationTime}}</p>
+                  <p class=" description"> Joined on {{profileData.metadata.creationTime | date }}</p>
                 </div>
                 <div class=" card-description">
-                  Do not be scared of the truth because we need to restart the human
-                  foundation in truth And I love you like Kanye loves Kanye I love
-                  Rick Owens’ bed design but the back is...
+                
+                </div>
+
+                <h2 style="margin-top: 10%;" class=" title">Current Chats</h2>
+                <div class=" card-footer">
+                  <div 
+                    fxLayout="row wrap" 
+                    fxLayout.lt-sm="column" 
+                    fxLayoutGap="32px" 
+                    fxLayoutAlign="flex-start">
+                    <ng-container *ngFor="let chat of currentChats">
+                        <div class=" button-container">
+                          <h3 style="font-weight: bold;">{{chat.messageWith.displayName |titlecase}}</h3>
+                          <img style="object-fit:cover;height:100px;width:100px;border-radius:100%" [src]="chat.messageWith.photoURL" />
+                        </div>
+  
+                    </ng-container>
+                  </div>
+  
                 </div>
               </div>
-              <div class=" card-footer">
-                <div class=" button-container">
-                  <button
-                    class=" btn btn-icon btn-round btn-facebook"
-                    href="javascript:void(0)"
-                  >
-                    <i class=" fab fa-facebook"> </i>
-                  </button>
-                  <button
-                    class=" btn btn-icon btn-round btn-twitter"
-                    href="javascript:void(0)"
-                  >
-                    <i class=" fab fa-twitter"> </i>
-                  </button>
-                  <button
-                    class=" btn btn-icon btn-round btn-google"
-                    href="javascript:void(0)"
-                  >
-                    <i class=" fab fa-google-plus"> </i>
-                  </button>
-                </div>
-              </div>
+              
+
             </div>
           </div>
       </div>

@@ -38,6 +38,7 @@ import { UpdateProfileComponent } from './chat/update-profile/update-profile.com
 import { VideoComponent } from './video/video.component';
 import { GroupchatComponent } from './chat/groupchat/groupchat.component';
 import { ProfileComponent } from './profile/profile.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 
 
@@ -71,6 +72,7 @@ import { ProfileComponent } from './profile/profile.component';
     MatCardModule,
     MatSidenavModule,
     MatSortModule,
+    FlexLayoutModule
   ],
   providers: [DatePipe],
   declarations: [

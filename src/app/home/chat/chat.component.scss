@@ -641,7 +641,7 @@ body > app-root > app-home > div.wrapper > div.main-panel {
 	}
 	
 	.content-card {
-    background: #E6EAEA;
+		background-color: #547698;
 		float: right;
 		width: 60%;
 		height: 100%;
@@ -687,6 +687,7 @@ body > app-root > app-home > div.wrapper > div.main-panel {
 				float: left;
 				margin-top: 18px;
 				font-weight: bolder;
+				font-size: larger;
 			}
 			
 			.social-media {
@@ -950,14 +951,16 @@ color : #2f3640;
 
 
 .search-content-card {
-    background: #E6EAEA;
+    //background: #E6EAEA;
+	//background-color: #b3e7e794;
+	background-color: #547698;
 		float: right;
 		width: 60%;
 		height: 100%;
 		overflow: hidden;
 		position: relative;
-    padding: 0px;
-    padding-left: 0px !important;
+		padding: 0px;
+		padding-left: 0px !important;
 		@media screen and (max-width: $break) {
 			width: calc(100% - 58px);		
 			min-width: 300px !important;
@@ -1187,4 +1190,9 @@ color : #2f3640;
 	&:hover {
 		color: #2ecc71;
 	}
+}
+
+mat-card {
+	background: #a1d2c2;
+	background: hsl(160deg 35% 73% / 32%);
 }

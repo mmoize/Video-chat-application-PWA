@@ -17,7 +17,7 @@ export class HomeComponent implements OnInit{
 
 
 
-  public sidebarColor: string = "red";
+  public sidebarColor: string = "success";
 
   constructor() {}
   changeSidebarColor(color:any){
