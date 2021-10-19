@@ -23,6 +23,7 @@
 
                 <h2 style="margin-top: 10%;" class=" title">Current Chats</h2>
                 <div class=" card-footer">
+                  <p *ngIf="currentChats.length <= 0">You currently Have 0 chats, send a message to someone.</p>
                   <div 
                     fxLayout="row wrap" 
                     fxLayout.lt-sm="column" 
